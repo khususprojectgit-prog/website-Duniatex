@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Duniatex Inspection</title>
+  <meta name="description" content="Login ke sistem inspeksi kain Duniatex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3d;
+      --accent: #6366f1;
+      --accent-h: #4f46e5;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: .75rem;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, .35);
+    }
+
+    .logo h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+
+    .logo p {
+      color: var(--muted);
+      font-size: .85rem;
+      margin-top: .25rem;
+    }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: .4rem;
+    }
+
+    .field {
+      margin-bottom: 1.2rem;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      padding: .8rem 1rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: .9rem;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      margin-top: .5rem;
+    }
+
+    .btn:active {
+      transform: scale(.98);
+      opacity: .9;
+    }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      display: none;
+      background: rgba(239, 68, 68, .12);
+      border: 1px solid rgba(239, 68, 68, .35);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .875rem;
+      margin-bottom: 1rem;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: .4rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🧵</div>
+      <h1>Duniatex</h1>
+      <p>Sistem Inspeksi Kain</p>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="operator@duniatex.com" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <button id="loginBtn" class="btn" type="submit">Masuk</button>
+    </form>
+  </div>
+
+  <script>
+    const BASE = 'http://127.0.0.1:8000/api';
+
+    // Verifikasi token ke server sebelum redirect — cegah auto-redirect dengan token expired
+    const _storedToken = localStorage.getItem('token');
+    if (_storedToken && _storedToken !== 'undefined' && _storedToken !== 'null') {
+      // Cek token ke server dulu, baru redirect jika valid
+      fetch(`${BASE}/me`, {
+        headers: { 'Authorization': `Bearer ${_storedToken}`, 'Accept': 'application/json' }
+      }).then(res => {
+        if (res.ok) {
+          // Token masih valid — redirect ke dashboard sesuai role
+          const _storedRole = localStorage.getItem('role') || '';
+          const _dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
+          window.location.replace(_dashMap[_storedRole] || 'dashboard.html');
+        } else {
+          // Token expired atau invalid — hapus semua dan tampilkan form login
+          localStorage.clear();
+        }
+      }).catch(() => {
+        // Server tidak bisa dijangkau — tetap tampilkan form login (jangan redirect)
+        // localStorage dibiarkan agar bisa coba lagi saat server hidup
+      });
+    } else if (_storedToken) {
+      // Token rusak (string "undefined"/"null") — hapus semua
+      localStorage.clear();
+    }
+
+    const form = document.getElementById('loginForm');
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('errorMsg');
+
+    function showError(msg) {
+      errEl.textContent = msg;
+      errEl.classList.add('show');
+    }
+    function clearError() { errEl.classList.remove('show'); }
+
+    function setLoading(on) {
+      btn.disabled = on;
+      btn.innerHTML = on
+        ? '<span class="spinner"></span>Memproses…'
+        : 'Masuk';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showError('Email dan password wajib diisi.');
+        return;
+      }
+
+      setLoading(true);
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 20_000); // 20-detik timeout
+      try {
+        const res = await fetch(`${BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.message || 'Login gagal. Periksa email & password.');
+          return;
+        }
+
+        // API response shape: { success, message, data: { token, user: { id, name, email, role } } }
+        const token = data.data?.token;
+        const user = data.data?.user;
+        const role = user?.role ?? '';
+
+        if (!token) {
+          showError('Token tidak ditemukan pada respons server.');
+          return;
+        }
+
+        // Save to localStorage only after validation
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', role);
+        localStorage.setItem('user_name', user?.name || '');
+        localStorage.setItem('user_email', user?.email || '');
+
+        // Arahkan ke dashboard sesuai role
+        const dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
+        window.location.replace(dashMap[role] || 'dashboard.html');
+
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          showError('Koneksi timeout (>20 detik). Pastikan backend Laravel berjalan di http://127.0.0.1:8000');
+        } else if (err instanceof SyntaxError) {
+          showError('Server mengembalikan respons tidak valid. Pastikan Laravel berjalan dan APP_DEBUG dicek.');
+        } else {
+          showError('Tidak dapat terhubung ke server. Pastikan backend berjalan di http://127.0.0.1:8000');
+        }
+        console.error('[Login Error]', err);
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+
+</html>

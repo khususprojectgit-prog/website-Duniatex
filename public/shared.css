@@ -1,0 +1,215 @@
+/* ============================================================
+   DUNIATEX INSPECTION SYSTEM — Shared Design System
+   Light Industrial Theme
+   ============================================================ */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f5f7fb;
+  --surface:#ffffff;
+  --surface2:#f8fafc;
+  --surface3:#f1f5f9;
+  --border:#e2e8f0;
+  --border-hi:#cbd5e1;
+  --accent:#4f46e5;
+  --accent-2:#7c3aed;
+  --accent-light:rgba(79,70,229,.08);
+  --accent-glow:rgba(79,70,229,.2);
+  --text:#0f172a;
+  --text-2:#1e293b;
+  --muted:#64748b;
+  --muted-2:#94a3b8;
+  --success:#059669;
+  --success-bg:rgba(5,150,105,.08);
+  --success-border:rgba(5,150,105,.25);
+  --warning:#d97706;
+  --warning-bg:rgba(217,119,6,.08);
+  --warning-border:rgba(217,119,6,.25);
+  --danger:#dc2626;
+  --danger-bg:rgba(220,38,38,.08);
+  --danger-border:rgba(220,38,38,.25);
+  --radius:12px;
+  --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+
+  /* ── Legacy compatibility aliases (inline styles & JS-generated HTML) ──
+     These map old short-form variable names used throughout inspection.html,
+     qc-detail.html, and qc.html body/JS to the new semantic design tokens.
+     Do NOT remove — required for backward compatibility with existing markup. */
+  --mu:  var(--muted);
+  --ok:  var(--success);
+  --er:  var(--danger);
+  --wa:  var(--warning);
+  --ac:  var(--accent);
+  --ac2: var(--accent-2);
+  --tx:  var(--text);
+  --bd:  var(--border);
+  --bdh: var(--border-hi);
+  --s1:  var(--surface);
+  --s2:  var(--surface2);
+  --s3:  var(--surface3);
+  --r:   var(--radius);
+}
+
+
+
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:5rem;-webkit-font-smoothing:antialiased}
+
+/* ── Header ─────────────────────────────────────────────── */
+header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+.header-left{display:flex;align-items:center;gap:.75rem}
+.logo-mark,.header-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 12px var(--accent-glow);flex-shrink:0}
+.brand-name,.header-title{font-size:.95rem;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.brand-role{font-size:.68rem;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.header-sub,.user-name{font-size:.75rem;color:var(--muted);margin-top:.1rem}
+.header-right{display:flex;align-items:center;gap:.65rem}
+
+/* Role badge */
+.badge-role{display:inline-block;background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:6px;font-size:.65rem;font-weight:700;padding:.12rem .5rem;letter-spacing:.05em;text-transform:uppercase;vertical-align:middle;margin-left:.4rem}
+.badge-admin-role{background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.25);color:var(--warning)}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-logout{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);border-radius:var(--radius-sm);font-size:.78rem;font-weight:600;font-family:inherit;padding:.45rem .9rem;cursor:pointer;transition:background .2s}
+.btn-logout:hover{background:rgba(220,38,38,.16)}
+.btn-refresh{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);font-size:.78rem;font-family:inherit;padding:.4rem .85rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.35rem}
+.btn-refresh:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.back-btn,.back{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);font:.6rem 600 'Inter',sans-serif;font-size:.85rem;font-weight:600;padding:.5rem .9rem;cursor:pointer;flex-shrink:0;transition:all .2s;box-shadow:var(--shadow)}
+.back-btn:hover,.back:hover{background:var(--surface3);border-color:var(--border-hi)}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+
+/* ── Section labels ─────────────────────────────────────── */
+.slabel,.section-label,.section-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem;display:block}
+.section-bar,.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+
+/* ── Status Pill System (unified) ───────────────────────── */
+.status-pill,.spill{display:inline-flex;align-items:center;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:20px;padding:.22rem .65rem;border:1px solid;white-space:nowrap}
+/* pill-*/
+.pill-new,.sp-new  {background:#f1f5f9;color:#475569;border-color:#cbd5e1}
+.pill-ip,.sp-ip    {background:#eef2ff;color:#4338ca;border-color:#c7d2fe}
+.pill-sub,.sp-sub  {background:#fffbeb;color:#92400e;border-color:#fde68a}
+.pill-val,.sp-val  {background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+.pill-pnd,.sp-pnd  {background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+.pill-rej,.sp-rej  {background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.pill-cmp,.sp-cmp  {background:#ecfdf5;color:#047857;border-color:#6ee7b7}
+
+/* ── Result badges ──────────────────────────────────────── */
+.res-pass{display:inline-flex;align-items:center;gap:.3rem;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:7px;padding:.2rem .6rem;font-size:.75rem;font-weight:700}
+.res-fail{display:inline-flex;align-items:center;gap:.3rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:7px;padding:.2rem .6rem;font-size:.75rem;font-weight:700}
+
+/* Admin badge types */
+.badge{display:inline-block;font-size:.68rem;font-weight:600;border-radius:6px;padding:.18rem .55rem;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
+.badge-active  {background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+.badge-inactive{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.badge-admin-r {background:#fffbeb;color:#92400e;border-color:#fde68a}
+.badge-qc      {background:#eef2ff;color:#4338ca;border-color:#c7d2fe}
+.badge-operator{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+
+/* ── Tables ─────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;min-width:500px}
+thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+th{padding:.75rem 1rem;text-align:left;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+td{padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text-2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+.tc{font-weight:700;color:var(--text)}
+.tm{font-size:.78rem;color:var(--muted)}
+
+/* ── Forms ──────────────────────────────────────────────── */
+label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:.4rem}
+select,input[type=number],input[type=text],input[type=email],input[type=password],textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font:.9rem 'Inter',sans-serif;padding:.7rem 1rem;outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;resize:vertical}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%2364748b' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
+select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+select option{background:var(--surface);color:var(--text)}
+
+/* ── Skeleton shimmer ───────────────────────────────────── */
+.skeleton,.sk{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shim 1.4s infinite;border-radius:var(--radius-sm)}
+@keyframes shim{to{background-position:-200% 0}}
+.sk-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.15rem;margin-bottom:.75rem;box-shadow:var(--shadow)}
+.sk-line{height:14px;margin-bottom:.65rem}
+.sk-line.w-60{width:60%}.sk-line.w-40{width:40%}.sk-line.w-80{width:80%}
+.sk-btn{height:42px;border-radius:var(--radius-sm);margin-top:.85rem}
+.sk-row{height:44px;border-radius:6px;margin-bottom:.5rem}
+
+/* ── Empty / Error states ───────────────────────────────── */
+.state-box{text-align:center;padding:4rem 1.5rem;color:var(--muted)}
+.state-box .state-icon,.state-box .icon,.state-box .si{font-size:2.8rem;margin-bottom:.9rem;display:block}
+.state-box h3{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.5rem}
+.state-box p{font-size:.88rem;line-height:1.6}
+
+/* ── Spinner ────────────────────────────────────────────── */
+.spinner,.sp{display:inline-block;width:15px;height:15px;border:2px solid rgba(79,70,229,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle}
+.big-spin,.big-sp{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ──────────────────────────────────────────────── */
+#toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);border:1px solid var(--border-hi);color:#fff;border-radius:10px;padding:.65rem 1.25rem;font-size:.875rem;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.15);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;z-index:200}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.ok,#toast.success{background:#065f46;color:#ecfdf5;border-color:#059669}
+#toast.err,#toast.error{background:#991b1b;color:#fef2f2;border-color:#dc2626}
+
+/* ── Page loader ────────────────────────────────────────── */
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:200;transition:opacity .35s}
+#loader.hidden{opacity:0;pointer-events:none}
+
+/* ── Fade animation ─────────────────────────────────────── */
+@keyframes fdIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Banners ────────────────────────────────────────────── */
+.banner{border-radius:var(--radius-sm);padding:.9rem 1rem;display:flex;align-items:flex-start;gap:.6rem;font-size:.85rem;line-height:1.5;margin-bottom:1rem}
+.b-val,.banner-validated{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success)}
+.b-rej,.banner-rejected{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger)}
+.qc-wait{background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning);border-radius:var(--radius-sm);padding:.75rem 1rem;display:flex;align-items:center;gap:.6rem;font-size:.85rem;margin-bottom:1rem}
+
+/* ── Modal ──────────────────────────────────────────────── */
+#modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem}
+#modal.show{display:flex}
+.modal-box,.mbox{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 1.5rem;max-width:380px;width:100%;box-shadow:var(--shadow-md)}
+.modal-box h3,.mbox h3{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:.4rem}
+.modal-box p,.mbox p{font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:1rem}
+.modal-acts,.macts{display:flex;gap:.65rem;margin-top:.9rem}
+.btn-cancel,.m-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);font:.9rem 'Inter',sans-serif;font-weight:600;padding:.75rem;cursor:pointer;transition:background .2s}
+.btn-cancel:hover,.m-cancel:hover{background:var(--surface3)}
+.btn-confirm{flex:1;background:var(--success);color:#fff;border:none;border-radius:var(--radius-sm);font:.9rem 'Inter',sans-serif;font-weight:700;padding:.75rem;cursor:pointer;box-shadow:0 4px 12px rgba(5,150,105,.25)}
+.m-confirm{flex:1;background:linear-gradient(135deg,#b91c1c,var(--danger));color:#fff;border:none;border-radius:var(--radius-sm);font:.9rem 'Inter',sans-serif;font-weight:700;padding:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem}
+.m-confirm:disabled{opacity:.5;cursor:not-allowed}
+.merr{font-size:.78rem;color:var(--danger);margin:.4rem 0 .75rem;display:none}
+.mbox textarea{background:var(--bg)}
+
+/* ── Tab bar (admin) ────────────────────────────────────── */
+.tab-bar{display:flex;gap:.25rem;margin-bottom:1.25rem;border-bottom:2px solid var(--border)}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:inherit;font-size:.85rem;font-weight:500;padding:.65rem .85rem;cursor:pointer;transition:all .2s;white-space:nowrap;margin-bottom:-2px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+
+/* ── Stats grid ─────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;box-shadow:var(--shadow)}
+.stat-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem;font-weight:600}
+.stat-value{font-size:1.8rem;font-weight:800;letter-spacing:-.5px}
+.stat-value.green,.stat-value.purple{color:var(--accent)}
+.stat-value.yellow{color:var(--warning)}
+.stat-value.red{color:var(--danger)}
+
+/* ── Filter tabs (QC dashboard) ─────────────────────────── */
+.filter-bar{display:flex;gap:.4rem;margin-bottom:1.1rem;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.filter-tabs{display:flex;gap:.4rem;flex-wrap:wrap}
+.ftab{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:20px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.38rem .9rem;cursor:pointer;transition:all .2s;white-space:nowrap;box-shadow:var(--shadow)}
+.ftab:hover{border-color:var(--accent);color:var(--accent)}
+.ftab.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 12px var(--accent-glow)}
+.ftab-count{background:rgba(255,255,255,.25);border-radius:20px;padding:.05rem .42rem;font-size:.68rem;margin-left:.3rem;font-weight:700}
+.ftab:not(.active) .ftab-count{background:var(--border);color:var(--muted)}
+
+/* ── Summary bar ─────────────────────────────────────────── */
+.sum-bar{display:flex;gap:.75rem;margin-bottom:1.1rem}
+.sum-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem .6rem;text-align:center;box-shadow:var(--shadow)}
+.sum-val{font-size:1.3rem;font-weight:800;color:var(--accent)}
+.sum-lbl{font-size:.65rem;color:var(--muted);margin-top:.1rem;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── Detail button ──────────────────────────────────────── */
+.btn-detail{background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:var(--radius-sm);font:.78rem 'Inter',sans-serif;font-weight:600;padding:.38rem .8rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-detail:hover{background:rgba(79,70,229,.15);border-color:rgba(79,70,229,.35)}

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Inspeksi — Duniatex</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
+.hinfo{flex:1;min-width:0}.htitle{font-size:.95rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.hsub{font-size:.72rem;color:var(--muted);margin-top:.1rem;display:flex;align-items:center;gap:.5rem}
+/* Roll strip */
+.roll-strip{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .9rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.ri-label{font-size:.65rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.06em}
+.ri-val{font-size:.9rem;font-weight:700;margin-top:.1rem;color:var(--text)}
+/* Form */
+.fg{margin-bottom:.9rem}.fg:last-child{margin-bottom:0}
+.point-badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:9px;padding:.55rem .9rem;font-size:.95rem;font-weight:700}
+.btn-add{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:none;border-radius:var(--radius-sm);font:700 .95rem 'Inter',sans-serif;padding:.85rem;cursor:pointer;transition:opacity .2s,transform .1s;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:.4rem;box-shadow:0 4px 14px var(--accent-glow)}
+.btn-add:active{transform:scale(.98);opacity:.88}
+.btn-add:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+/* Defects */
+.defect-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;display:flex;align-items:center;gap:.7rem;animation:fdIn .25s ease;margin-bottom:.5rem;box-shadow:var(--shadow)}
+.d-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.d-info{flex:1;min-width:0}
+.d-name{font-size:.88rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d-meta{font-size:.73rem;color:var(--muted);margin-top:.1rem}
+.d-pt{background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:7px;padding:.22rem .55rem;font-size:.78rem;font-weight:700;flex-shrink:0}
+.empty-d{text-align:center;padding:2.5rem 1rem;color:var(--muted);font-size:.88rem}
+/* Submit */
+.btn-finish{width:100%;background:linear-gradient(135deg,#047857,var(--success));color:#fff;border:none;border-radius:var(--radius-sm);font:700 1rem 'Inter',sans-serif;padding:.95rem;cursor:pointer;transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:.5rem;box-shadow:0 4px 16px rgba(5,150,105,.25)}
+.btn-finish:active{transform:scale(.98);opacity:.88}
+.btn-finish:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+/* Result hero */
+.result-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.25rem;text-align:center;margin-bottom:1rem;box-shadow:var(--shadow)}
+.rh-result{font-size:2.5rem;font-weight:800;letter-spacing:-1px;margin-bottom:.35rem}
+.rh-result.PASS{color:var(--success)}.rh-result.FAIL{color:var(--danger)}
+.rh-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
+.rh-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem;text-align:center}
+.rh-val{font-size:1.2rem;font-weight:800;color:var(--text)}
+.rh-lbl{font-size:.68rem;color:var(--muted);margin-top:.15rem}
+.score-bar-wrap{height:8px;background:var(--border);border-radius:20px;overflow:hidden;margin:.75rem 0 .35rem}
+.score-bar-fill{height:100%;border-radius:20px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.score-thresh{font-size:.68rem;color:var(--muted);text-align:right}
+.banner-icon{font-size:1.1rem;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="big-spin"></div><p style="color:var(--mu);font-size:.9rem">Memuat inspeksi…</p></div>
+
+<header>
+  <button class="back-btn" id="backBtn">← Kembali</button>
+  <div class="hinfo">
+    <div class="htitle" id="hTitle">Inspeksi Kain</div>
+    <div class="hsub"><span id="hStatusPill" class="spill spill-ip">IN PROGRESS</span><span id="hMachine">—</span></div>
+  </div>
+</header>
+
+<main id="mainWrap" style="display:none">
+
+  <!-- Roll info strip -->
+  <div class="roll-strip" id="rollStrip"></div>
+
+  <!-- IN_PROGRESS: defect form -->
+  <div id="formSection">
+    <p class="slabel">Tambah Cacat</p>
+    <div class="card">
+      <div class="fg">
+        <label for="selDefect">Jenis Cacat</label>
+        <select id="selDefect"><option value="">— Pilih jenis cacat —</option></select>
+      </div>
+      <div class="fg">
+        <label>Point Cacat (4-Point System)</label>
+        <div class="point-badge" id="pointDisplay">— Pilih jenis cacat dahulu</div>
+      </div>
+      <div class="fg">
+        <label for="inPos">Posisi (meter) <span id="posHint" style="color:var(--mu);font-weight:400"></span></label>
+        <input id="inPos" type="number" min="0.1" step="0.1" placeholder="cth: 120"/>
+      </div>
+      <div class="fg">
+        <label for="inNotes">Catatan (opsional)</label>
+        <textarea id="inNotes" rows="2" placeholder="Deskripsi tambahan…"></textarea>
+      </div>
+    </div>
+    <button class="btn-add" id="addBtn">＋&nbsp;Tambah Cacat</button>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="sum-bar">
+    <div class="sum-box"><div class="sum-val" id="sumCount">0</div><div class="sum-lbl">Cacat</div></div>
+    <div class="sum-box"><div class="sum-val" id="sumPts">0</div><div class="sum-lbl">Total Poin</div></div>
+    <div class="sum-box"><div class="sum-val" id="sumScore">0.00</div><div class="sum-lbl">Est. Score</div></div>
+  </div>
+
+  <!-- Defect list -->
+  <p class="slabel">Daftar Cacat</p>
+  <div id="defectList"></div>
+
+  <!-- Submit button -->
+  <div id="submitSection" style="margin-top:1rem">
+    <button class="btn-finish" id="finishBtn" disabled>✓&nbsp; Submit Inspeksi</button>
+  </div>
+
+  <!-- SUBMITTED: results hero -->
+  <div id="resultSection" style="display:none">
+    <div class="result-hero">
+      <div style="font-size:.78rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Hasil Inspeksi</div>
+      <div class="rh-result" id="rhResult">—</div>
+      <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBar"></div></div>
+      <div class="score-thresh">Batas PASS: 24 poin/100m</div>
+      <div class="rh-grid">
+        <div class="rh-box"><div class="rh-val" id="rhPts">—</div><div class="rh-lbl">Total Poin</div></div>
+        <div class="rh-box"><div class="rh-val" id="rhScore">—</div><div class="rh-lbl">Score /100m</div></div>
+      </div>
+    </div>
+    <!-- Status-specific banner (only one shown at a time) -->
+    <div class="qc-wait" id="bannerSubmitted">⏳&nbsp; Menunggu validasi QC</div>
+    <div class="banner-validated" id="bannerValidated" style="display:none">
+      <span class="banner-icon">✅</span>
+      <div><strong>Inspeksi Divalidasi</strong><br><span style="font-size:.82rem;opacity:.85">Roll ini telah divalidasi oleh QC dan dinyatakan selesai.</span></div>
+    </div>
+    <div class="banner-rejected" id="bannerRejected" style="display:none">
+      <span class="banner-icon">⛔</span>
+      <div><strong>Inspeksi Ditolak — Menunggu Inspeksi Ulang</strong><br><span id="rejectedReason" style="font-size:.82rem;opacity:.9"></span></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Confirm modal -->
+<div id="modal">
+  <div class="modal-box">
+    <h3>Submit Inspeksi?</h3>
+    <p>Pastikan semua cacat telah diinput. Setelah disubmit, data tidak dapat diubah lagi.</p>
+    <div class="modal-acts">
+      <button class="btn-cancel" id="modalCancel">Batal</button>
+      <button class="btn-confirm" id="modalConfirm">Ya, Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE = 'http://127.0.0.1:8000/api';
+const token = localStorage.getItem('token');
+if (!token) location.replace('index.html');
+
+// Role guard — hanya operator yang boleh akses halaman ini
+const _role = localStorage.getItem('role');
+if (_role && _role !== 'operator') {
+  const _map = { admin: 'admin.html', qc: 'qc.html' };
+  location.replace(_map[_role] || 'index.html');
+}
+
+let inspection = null;
+let defects = [];
+let defectTypes = [];
+let rollLength = 0;
+let submitting = false;
+let pollTimer = null;
+
+// ── Central state guard ─────────────────────────────────
+function isEditableInspection(status) {
+  return (status || '').toUpperCase() === 'IN_PROGRESS';
+}
+
+// ── Lock / unlock all form inputs ──────────────────────
+function lockForm() {
+  $('selDefect').disabled = true;
+  $('inPos').disabled     = true;
+  $('inNotes').readOnly   = true;
+  $('addBtn').disabled    = true;
+  $('finishBtn').disabled = true;
+}
+function unlockForm() {
+  $('selDefect').disabled = false;
+  $('inPos').disabled     = false;
+  $('inNotes').readOnly   = false;
+  // addBtn and finishBtn re-enabled by renderDefects logic
+}
+
+// ── Error message mapper ─────────────────────────────
+function apiErrorMsg(data, status, fallback) {
+  if (status === 401) return 'Sesi berakhir. Silakan login ulang.';
+  if (status === 403) return 'Akses ditolak.';
+  if (status === 409) return 'Status inspeksi telah berubah. Data diperbarui.';
+  if (status === 422) return data.message || 'Validasi gagal. Periksa kembali input Anda.';
+  return data?.message || fallback || 'Terjadi kesalahan.';
+}
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function auth(){ return {Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json'} }
+
+let tt;
+function toast(msg,cls='',dur=2800){
+  const e=$('toast'); e.textContent=msg; e.className=cls?`show ${cls}`:'show';
+  clearTimeout(tt); tt=setTimeout(()=>e.className='',dur);
+}
+
+// ── Init ──────────────────────────────────────────────────
+async function init(){
+  try {
+    const id = new URLSearchParams(location.search).get('id') || localStorage.getItem('inspection_id');
+    if(!id){ toast('Tidak ada inspeksi aktif.','err'); setTimeout(()=>location.replace('dashboard.html'),1500); return; }
+
+    const [insp, types] = await Promise.all([
+      fetch(`${BASE}/operator/inspections/${id}`,{headers:auth()}).then(r=>{
+        if(r.status===401){localStorage.clear();location.replace('index.html');}
+        return r.json();
+      }),
+      fetch(`${BASE}/operator/defect-types`,{headers:auth()}).then(r=>r.json())
+    ]);
+
+    inspection = insp.data ?? insp;
+    defectTypes = Array.isArray(types) ? types : (types.data ?? []);
+    rollLength = parseFloat(inspection.roll?.length_meter ?? 0);
+
+    // defects from nested or separate
+    defects = inspection.defects ?? [];
+
+    buildDefectTypeOptions();
+    renderHeader();
+    renderRollStrip();
+    renderState();
+
+  } catch(e){
+    toast('Gagal memuat data inspeksi. Kembali ke dashboard…','err',3000);
+    // Redirect kembali ke dashboard setelah error — jangan biarkan user terjebak di halaman kosong
+    setTimeout(() => location.replace('dashboard.html'), 2500);
+  } finally {
+    $('loader').classList.add('hidden');
+    $('mainWrap').style.display='';
+  }
+}
+
+function buildDefectTypeOptions(){
+  const sel = $('selDefect');
+  sel.innerHTML='<option value="">— Pilih jenis cacat —</option>';
+  defectTypes.forEach(t=>{
+    const o=document.createElement('option');
+    o.value=t.id; o.dataset.point=t.default_point??1;
+    o.textContent=t.defect_name??t.name;
+    sel.appendChild(o);
+  });
+}
+
+function renderHeader(){
+  const roll = inspection.roll ?? {};
+  const st = (inspection.status||'').toUpperCase();
+  $('hTitle').textContent = roll.roll_code ?? `Inspeksi #${inspection.id}`;
+  $('hMachine').textContent = roll.machine?.machine_name ?? '';
+  const pill = $('hStatusPill');
+  const pillMap = {
+    IN_PROGRESS: ['sp-ip',  'IN PROGRESS'],
+    SUBMITTED:   ['sp-sub', 'SUBMITTED'],
+    VALIDATED:   ['sp-val', 'VALIDATED'],
+    REJECTED:    ['sp-rej', 'REJECTED'],
+  };
+  const [cls, label] = pillMap[st] ?? ['sp-ip', st || 'IN PROGRESS'];
+  pill.className = `spill ${cls}`;
+  pill.textContent = label;
+}
+
+function renderRollStrip(){
+  const r = inspection.roll ?? {};
+  const m = r.machine?.machine_name ?? '—';
+  const items = [
+    ['Roll Code', r.roll_code??'—'],
+    ['Panjang', (parseFloat(r.length_meter??0).toFixed(0))+' m'],
+    ['Batch', r.batch_number??'—'],
+    ['Mesin', m],
+  ];
+  $('rollStrip').innerHTML = items.map(([l,v])=>
+    `<div><div class="ri-label">${esc(l)}</div><div class="ri-val">${esc(v)}</div></div>`
+  ).join('');
+}
+
+function renderState(){
+  const st = (inspection.status||'').toUpperCase();
+
+  // SUBMITTED, VALIDATED, REJECTED → read-only (hide form & submit btn, show result)
+  if(st === 'SUBMITTED' || st === 'VALIDATED' || st === 'REJECTED'){
+    $('formSection').style.display   = 'none';
+    $('submitSection').style.display = 'none';
+    $('resultSection').style.display = '';
+
+    // Banner logic
+    $('bannerSubmitted').style.display = 'none';
+    $('bannerValidated').style.display = 'none';
+    $('bannerRejected').style.display  = 'none';
+
+    if (st === 'SUBMITTED') {
+      $('bannerSubmitted').style.display = 'flex';
+    } else if (st === 'VALIDATED') {
+      $('bannerValidated').style.display = 'flex';
+    } else if (st === 'REJECTED') {
+      const reason = inspection.rejection_reason ?? inspection.reject_reason ?? '';
+      $('rejectedReason').textContent = reason
+        ? `Alasan: ${reason}`
+        : 'Roll akan dikembalikan ke antrian inspeksi.';
+      $('bannerRejected').style.display = 'flex';
+    }
+
+    renderResults();
+  } else {
+    // IN_PROGRESS → editable
+    $('formSection').style.display   = '';
+    $('submitSection').style.display = '';
+    $('resultSection').style.display = 'none';
+    $('inPos').max = rollLength;
+    $('posHint').textContent = rollLength ? `(maks. ${rollLength} m)` : '';
+  }
+  renderDefects();
+}
+
+function renderResults(){
+  const res = (inspection.result||'').toUpperCase();
+  const pts = inspection.total_points ?? 0;
+  const score = parseFloat(inspection.score ?? 0);
+
+  $('rhResult').textContent = res || '—';
+  $('rhResult').className = `rh-result ${res}`;
+  $('rhPts').textContent = pts;
+  $('rhScore').textContent = score.toFixed(2);
+
+  // Score bar: capped at 48 for visual (2× threshold)
+  const pct = Math.min(100, (score / 48) * 100);
+  const bar = $('scoreBar');
+  bar.style.width = pct+'%';
+  bar.style.background = res==='PASS' ? 'var(--ok)' : 'var(--er)';
+}
+
+function renderDefects(){
+  const st = (inspection.status||'').toUpperCase();
+  // Read-only for any terminal/waiting state
+  const readonly = ['SUBMITTED','VALIDATED','REJECTED'].includes(st);
+  const container = $('defectList');
+  updateSummary();
+
+  if(defects.length===0){
+    container.innerHTML='<div class="empty-d">Belum ada cacat yang diinput.</div>';
+    $('finishBtn').disabled=true; return;
+  }
+
+  container.innerHTML='';
+  [...defects].reverse().forEach(d=>{
+    const typeName = d.defect_type?.defect_name ?? d.defect_type_name ?? `#${d.defect_type_id}`;
+    const div=document.createElement('div'); div.className='defect-row';
+    div.innerHTML=`
+      <div class="d-dot"></div>
+      <div class="d-info">
+        <div class="d-name">${esc(typeName)}</div>
+        <div class="d-meta">Posisi: ${esc(d.position_meter)} m${d.notes?` · ${esc(d.notes)}`:''}</div>
+      </div>
+      <div class="d-pt">${esc(d.point)} pt</div>`;
+    container.appendChild(div);
+  });
+
+  if(!readonly) $('finishBtn').disabled = defects.length===0;
+}
+
+function updateSummary(){
+  const cnt = defects.length;
+  const pts = defects.reduce((s,d)=>s+(Number(d.point)||0),0);
+  const score = rollLength>0 ? (pts/rollLength)*100 : 0;
+  $('sumCount').textContent=cnt;
+  $('sumPts').textContent=pts;
+  $('sumScore').textContent=score.toFixed(2);
+}
+
+// ── Defect type → auto point ─────────────────────────────
+$('selDefect').addEventListener('change',()=>{
+  const opt=$('selDefect').selectedOptions[0];
+  const pt = opt?.dataset.point;
+  $('pointDisplay').innerHTML = pt
+    ? `<span style="color:#a5b4fc;font-size:1.1rem">${esc(pt)}</span>&nbsp;poin`
+    : '— Pilih jenis cacat dahulu';
+});
+
+// ── Add defect ───────────────────────────────────────────
+async function addDefect() {
+  // ★ Defensive guard: JS-level state check (tahan DevTools abuse)
+  if (!isEditableInspection(inspection?.status)) {
+    toast('Inspection is locked.', 'err');
+    lockForm();
+    return;
+  }
+
+  const opt = $('selDefect').selectedOptions[0];
+  const defectTypeId = Number($('selDefect').value);
+  const pos   = parseFloat($('inPos').value);
+  const point = Number(opt?.dataset.point ?? 0);
+  const notes = $('inNotes').value.trim();
+
+  if (!defectTypeId) { toast('Pilih jenis cacat.', 'err'); return; }
+  if (!pos || pos <= 0) { toast('Posisi harus lebih dari 0.', 'err'); return; }
+  if (rollLength && pos > rollLength) { toast(`Posisi maks. ${rollLength} m.`, 'err'); return; }
+  if (!point) { toast('Jenis cacat tidak memiliki nilai poin.', 'err'); return; }
+
+  const btn = $('addBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>&nbsp;Menambah…';
+
+  try {
+    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}/defects`, {
+      method: 'POST', headers: auth(),
+      body: JSON.stringify({ defect_type_id: defectTypeId, position_meter: pos, point, notes: notes || null })
+    });
+    const data = await res.json();
+
+    // Stale state: backend rejected because status changed
+    if (res.status === 409 || res.status === 422) {
+      toast('Status inspeksi berubah. Data diperbarui.', 'err', 3500);
+      await silentRefresh();
+      return;
+    }
+    if (!res.ok) {
+      toast(apiErrorMsg(data, res.status, 'Gagal menambah cacat.'), 'err');
+      return;
+    }
+
+    const newDefect = data.data ?? data;
+    newDefect.defect_type_name = opt.textContent;
+    defects.push(newDefect);
+    $('inPos').value = '';
+    $('inNotes').value = '';
+    renderDefects();
+    toast('Cacat berhasil ditambahkan.', 'ok');
+  } catch (_) {
+    toast('Network error. Periksa koneksi Anda.', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '＋&nbsp;Tambah Cacat';
+  }
+}
+$('addBtn').addEventListener('click', addDefect);
+
+// ── Submit inspection (defensive) ───────────────────────
+async function submitInspection() {
+  // ★ Defensive guard
+  if (!isEditableInspection(inspection?.status)) {
+    toast('Inspection is locked.', 'err'); return;
+  }
+  if (submitting) return;
+  if (defects.length === 0) { toast('Tambahkan minimal 1 cacat sebelum submit.', 'err'); return; }
+
+  submitting = true;
+  $('modal').classList.remove('show');
+  $('finishBtn').disabled = true;
+  $('finishBtn').innerHTML = '<span class="spinner"></span>&nbsp;Mengirim…';
+
+  try {
+    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}/finish`, {
+      method: 'POST', headers: auth()
+    });
+    const data = await res.json();
+
+    if (res.status === 409 || (data.message||'').toLowerCase().includes('already')) {
+      toast('Inspection status changed. Data refreshed.', 'err', 3500);
+      submitting = false;
+      await silentRefresh();
+      return;
+    }
+    if (!res.ok) {
+      toast(apiErrorMsg(data, res.status, 'Unable to submit inspection.'), 'err');
+      submitting = false;
+      $('finishBtn').disabled = false;
+      $('finishBtn').innerHTML = '✓&nbsp; Submit Inspeksi';
+      return;
+    }
+    inspection = data.data ?? data;
+    defects    = inspection.defects ?? defects;
+    localStorage.removeItem('inspection_id');
+    stopPolling();
+    toast('Inspeksi berhasil disubmit!', 'ok', 3000);
+    renderHeader();
+    renderState();
+  } catch (_) {
+    toast('Network error. Periksa koneksi Anda.', 'err');
+    submitting = false;
+    $('finishBtn').disabled = false;
+    $('finishBtn').innerHTML = '✓&nbsp; Submit Inspeksi';
+  }
+}
+
+$('finishBtn').addEventListener('click', () => {
+  if (submitting || defects.length === 0) return;
+  $('modal').classList.add('show');
+});
+$('modalCancel').addEventListener('click',  () => $('modal').classList.remove('show'));
+$('modalConfirm').addEventListener('click', submitInspection);
+
+// ── Silent refresh (stale state & polling) ──────────────
+async function silentRefresh() {
+  if (!inspection?.id) return;
+  try {
+    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}`, { headers: auth() });
+    if (res.status === 401) { localStorage.clear(); location.replace('index.html'); return; }
+    if (!res.ok) return;
+    const data   = await res.json();
+    const fresh  = data.data ?? data;
+    const prevSt = (inspection.status || '').toUpperCase();
+    const newSt  = (fresh.status     || '').toUpperCase();
+    inspection   = fresh;
+    defects      = fresh.defects ?? defects;
+    if (prevSt !== newSt) {
+      toast('Inspection status changed. Data refreshed.', 'err', 3500);
+      renderHeader();
+      renderState();
+    }
+    if (['VALIDATED','REJECTED'].includes(newSt)) stopPolling();
+  } catch (_) { /* silent */ }
+}
+
+// ── Polling (20s, stop on final states) ─────────────────
+function startPolling() { stopPolling(); pollTimer = setInterval(silentRefresh, 20_000); }
+function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
+
+// ── Back ─────────────────────────────────────────────────
+$('backBtn').addEventListener('click', () => { stopPolling(); location.href = 'dashboard.html'; });
+
+// ── Init ─────────────────────────────────────────────────
+async function initThenPoll() {
+  await init();
+  const st = (inspection?.status || '').toUpperCase();
+  if (!['VALIDATED','REJECTED'].includes(st)) startPolling();
+  if (!isEditableInspection(st)) lockForm();
+}
+initThenPoll();
+</script>
+</body>
+</html>

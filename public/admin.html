@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Dashboard — Duniatex Inspection</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+main{padding:1.25rem;max-width:1100px;margin:0 auto}
+.admin-icon{width:38px;height:38px;background:linear-gradient(135deg,#d97706,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.badge-admin{display:inline-block;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);color:var(--warning);border-radius:6px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;letter-spacing:.04em;text-transform:uppercase;margin-left:.35rem;vertical-align:middle}
+.search-bar{display:flex;gap:.6rem;margin-bottom:1rem;align-items:center}
+.search-bar input{flex:1;max-width:280px}
+.tbl-actions{display:flex;gap:.4rem}
+.btn-edit{background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:6px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
+.btn-edit:hover{background:rgba(79,70,229,.15)}
+.btn-del{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);border-radius:6px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
+.btn-del:hover{background:rgba(220,38,38,.15)}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font:.85rem 'Inter',sans-serif;font-weight:700;padding:.5rem 1rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;box-shadow:0 4px 12px var(--accent-glow);transition:opacity .2s}
+.btn-add:hover{opacity:.88}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.form-field{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.65rem}
+.form-field label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.modal-title{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:1.1rem;display:flex;align-items:center;gap:.5rem}
+.flow-wrap{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:1rem;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:1rem}
+.flow-step{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:700;color:var(--text)}
+.flow-arrow{color:var(--muted);font-size:.9rem}
+.flow-or{font-size:.65rem;color:var(--muted);font-weight:600;margin:0 .2rem}
+.wide-modal .modal-box{max-width:580px}
+.pager{display:flex;gap:.4rem;margin-top:.85rem;align-items:center;justify-content:flex-end;font-size:.8rem;color:var(--muted)}
+.pager button{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.3rem .7rem;cursor:pointer;font:.8rem 'Inter',sans-serif;color:var(--text)}
+.pager button:disabled{opacity:.4;cursor:not-allowed}
+.tab-panel{display:none}.tab-panel.active{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="admin-icon">⚙️</div>
+    <div>
+      <div class="header-title">Duniatex <span class="badge-admin">Admin</span></div>
+      <div class="header-sub" id="uname">Administrator</div>
+    </div>
+  </div>
+  <button class="btn-logout" id="logoutBtn">Keluar</button>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-label">Users</div><div class="stat-value" style="color:var(--accent)" id="sUsers">—</div></div>
+    <div class="stat-card"><div class="stat-label">Clients</div><div class="stat-value" style="color:var(--success)" id="sClients">—</div></div>
+    <div class="stat-card"><div class="stat-label">Machines</div><div class="stat-value" style="color:var(--warning)" id="sMachines">—</div></div>
+    <div class="stat-card"><div class="stat-label">Requests</div><div class="stat-value" style="color:var(--accent)" id="sRequests">—</div></div>
+    <div class="stat-card"><div class="stat-label">Total Rolls</div><div class="stat-value" style="color:var(--text)" id="sRolls">—</div></div>
+    <div class="stat-card"><div class="stat-label">Defect Types</div><div class="stat-value" style="color:var(--danger)" id="sDefects">—</div></div>
+  </div>
+
+  <!-- Workflow Diagram -->
+  <div class="flow-wrap">
+    <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:.4rem">Workflow:</span>
+    <span class="flow-step sp-new">NEW</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-ip">IN PROGRESS</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-sub">SUBMITTED</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-val">VALIDATED</span>
+    <span class="flow-or">or</span>
+    <span class="flow-step sp-sub">SUBMITTED</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-rej">REJECTED</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-pnd">PENDING</span><span class="flow-arrow">→</span>
+    <span class="flow-step sp-ip">IN PROGRESS</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="users">👥 Users</button>
+    <button class="tab-btn" data-tab="clients">🏢 Clients</button>
+    <button class="tab-btn" data-tab="machines">🏭 Machines</button>
+    <button class="tab-btn" data-tab="requests">📋 Requests</button>
+    <button class="tab-btn" data-tab="rolls">🧵 Fabric Rolls</button>
+    <button class="tab-btn" onclick="location.href='analytics.html'" style="background:linear-gradient(135deg,rgba(5,150,105,.1),rgba(79,70,229,.1));border-color:rgba(79,70,229,.2);color:var(--accent)">📊 Analytics</button>
+    <button class="tab-btn" data-tab="defects">🔖 Defect Types</button>
+  </div>
+
+  <!-- Tab: Users -->
+  <div class="tab-panel active" id="tab-users">
+    <div class="search-bar">
+      <input type="text" id="searchUsers" placeholder="Cari nama / email…" oninput="debounce(loadUsers,400)()"/>
+      <select id="filterRole" onchange="loadUsers()" style="width:auto;padding:.5rem .8rem">
+        <option value="">Semua Role</option>
+        <option value="admin">Admin</option>
+        <option value="qc">QC</option>
+        <option value="operator">Operator</option>
+      </select>
+      <button class="btn-add" onclick="openUserModal()">＋ Tambah User</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody id="tbUsers"></tbody>
+    </table></div>
+    <div class="pager" id="pgUsers"></div>
+  </div>
+
+  <!-- Tab: Clients -->
+  <div class="tab-panel" id="tab-clients">
+    <div class="search-bar">
+      <input type="text" id="searchClients" placeholder="Cari klien…" oninput="debounce(loadClients,400)()"/>
+      <button class="btn-add" onclick="openClientModal()">＋ Tambah Client</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Kode</th><th>Nama Client</th><th>Contact</th><th>Phone</th><th>Requests</th><th></th></tr></thead>
+      <tbody id="tbClients"></tbody>
+    </table></div>
+    <div class="pager" id="pgClients"></div>
+  </div>
+
+  <!-- Tab: Machines -->
+  <div class="tab-panel" id="tab-machines">
+    <div class="search-bar">
+      <input type="text" id="searchMachines" placeholder="Cari mesin…" oninput="debounce(loadMachines,400)()"/>
+      <button class="btn-add" onclick="openMachineModal()">＋ Tambah Mesin</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nama Mesin</th><th>Tipe</th><th>Lokasi</th><th></th></tr></thead>
+      <tbody id="tbMachines"></tbody>
+    </table></div>
+    <div class="pager" id="pgMachines"></div>
+  </div>
+
+  <!-- Tab: Requests -->
+  <div class="tab-panel" id="tab-requests">
+    <div class="search-bar">
+      <input type="text" id="searchReq" placeholder="Cari kode request…" oninput="debounce(loadRequests,400)()"/>
+      <select id="filterReqStatus" onchange="loadRequests()" style="width:auto;padding:.5rem .8rem">
+        <option value="">Semua Status</option>
+        <option value="NEW">NEW</option>
+        <option value="IN_PROGRESS">IN PROGRESS</option>
+        <option value="COMPLETED">COMPLETED</option>
+      </select>
+      <button class="btn-add" onclick="openRequestModal()">＋ Buat Request</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Kode</th><th>Client</th><th>Status</th><th>Rolls</th><th>QC</th><th>Tanggal</th></tr></thead>
+      <tbody id="tbRequests"></tbody>
+    </table></div>
+    <div class="pager" id="pgRequests"></div>
+  </div>
+
+  <!-- Tab: Fabric Rolls -->
+  <div class="tab-panel" id="tab-rolls">
+    <div class="search-bar">
+      <input type="text" id="searchRolls" placeholder="Cari roll code…" oninput="debounce(loadRolls,400)()"/>
+      <select id="filterRollStatus" onchange="loadRolls()" style="width:auto;padding:.5rem .8rem">
+        <option value="">Semua Status</option>
+        <option value="NEW">NEW</option>
+        <option value="IN_PROGRESS">IN PROGRESS</option>
+        <option value="SUBMITTED">SUBMITTED</option>
+        <option value="VALIDATED">VALIDATED</option>
+        <option value="PENDING">PENDING</option>
+      </select>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Roll Code</th><th>Request</th><th>Client</th><th>Mesin</th><th>Status</th><th>Operator</th><th>Score</th><th>Result</th></tr></thead>
+      <tbody id="tbRolls"></tbody>
+    </table></div>
+    <div class="pager" id="pgRolls"></div>
+  </div>
+
+  <!-- Tab: Defect Types -->
+  <div class="tab-panel" id="tab-defects">
+    <div class="search-bar">
+      <button class="btn-add" onclick="openDefectModal()">＋ Tambah Defect Type</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nama Cacat</th><th>Kategori</th><th>Poin</th><th></th></tr></thead>
+      <tbody id="tbDefects"></tbody>
+    </table></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<!-- Modal: User -->
+<div id="modalUser" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;display:none;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:440px;width:100%">
+    <div class="modal-title">👤 <span id="muTitle">Tambah User</span></div>
+    <div class="form-row">
+      <div class="form-field"><label>Nama Lengkap</label><input id="muName" type="text" placeholder="John Doe"/></div>
+      <div class="form-field"><label>Email</label><input id="muEmail" type="email" placeholder="john@example.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Password <span id="muPwHint" style="font-weight:400;color:var(--muted)">(biarkan kosong = tidak berubah)</span></label><input id="muPw" type="password" placeholder="min 8 karakter"/></div>
+      <div class="form-field"><label>Role</label>
+        <select id="muRole"><option value="operator">Operator</option><option value="qc">QC</option><option value="admin">Admin</option></select>
+      </div>
+    </div>
+    <div class="form-field"><label>Status</label>
+      <select id="muStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+    </div>
+    <div id="muErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalUser')">Batal</button>
+      <button class="btn-confirm" id="muSave" onclick="saveUser()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Client -->
+<div id="modalClient" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:480px;width:100%">
+    <div class="modal-title">🏢 <span id="mcTitle">Tambah Client</span></div>
+    <div class="form-row">
+      <div class="form-field"><label>Nama Client <span style="color:var(--danger)">*</span></label><input id="mcName" type="text" placeholder="Sari Garment"/></div>
+      <div class="form-field"><label>Perusahaan <span style="color:var(--danger)">*</span></label><input id="mcCompany" type="text" placeholder="PT. Sari Garment"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Contact Person <span style="color:var(--danger)">*</span></label><input id="mcContact" type="text" placeholder="Nama PIC"/></div>
+      <div class="form-field"><label>Nomor Telepon <span style="color:var(--danger)">*</span></label><input id="mcPhone" type="text" placeholder="08xx-xxxx-xxxx"/></div>
+    </div>
+    <div class="form-field"><label>Alamat</label><input id="mcAddress" type="text" placeholder="Jl. Industri No. 1, Surabaya"/></div>
+    <div id="mcErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalClient')">Batal</button>
+      <button class="btn-confirm" id="mcSave" onclick="saveClient()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Machine -->
+<div id="modalMachine" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:420px;width:100%">
+    <div class="modal-title">🏭 <span id="mmTitle">Tambah Mesin</span></div>
+    <div class="form-field"><label>Nama Mesin</label><input id="mmName" type="text" placeholder="Mesin A1"/></div>
+    <div class="form-row">
+      <div class="form-field"><label>Tipe</label><input id="mmType" type="text" placeholder="Weaving / Knitting…"/></div>
+      <div class="form-field"><label>Lokasi</label><input id="mmLoc" type="text" placeholder="Lantai 2"/></div>
+    </div>
+    <div id="mmErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalMachine')">Batal</button>
+      <button class="btn-confirm" id="mmSave" onclick="saveMachine()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Inspection Request -->
+<div id="modalRequest" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:560px;width:100%">
+    <div class="modal-title">📋 Buat Inspection Request</div>
+    <p style="font-size:.82rem;color:var(--muted);margin:-0.5rem 0 1rem">Roll akan dibuat otomatis sesuai jumlah yang ditentukan.</p>
+    <div class="form-row">
+      <div class="form-field"><label>Client <span style="color:var(--danger)">*</span></label>
+        <select id="mrClient"><option value="">— Pilih Client —</option></select>
+      </div>
+      <div class="form-field"><label>QC Penanggung Jawab</label>
+        <select id="mrQC"><option value="">— Pilih QC (opsional) —</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Mesin</label>
+        <select id="mrMachine"><option value="">— Pilih Mesin (opsional) —</option></select>
+      </div>
+      <div class="form-field"><label>Jumlah Roll <span style="color:var(--danger)">*</span></label>
+        <input id="mrTotal" type="number" min="1" max="200" placeholder="e.g. 5"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Panjang per Roll (meter) <span style="color:var(--danger)">*</span></label>
+        <input id="mrLength" type="number" min="1" step="0.01" placeholder="e.g. 100"/>
+      </div>
+      <div class="form-field"><label>Nomor Batch</label>
+        <input id="mrBatch" type="text" placeholder="BATCH-001"/>
+      </div>
+    </div>
+    <div class="form-field"><label>Catatan</label>
+      <textarea id="mrNotes" rows="2" placeholder="Instruksi khusus…"></textarea>
+    </div>
+    <div id="mrErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalRequest')">Batal</button>
+      <button class="btn-confirm" id="mrSave" onclick="saveRequest()">Buat Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Defect Type -->
+<div id="modalDefect" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:380px;width:100%">
+    <div class="modal-title">🔖 <span id="mdTitle">Tambah Defect Type</span></div>
+    <div class="form-field"><label>Nama Cacat</label><input id="mdName" type="text" placeholder="Lubang, Noda, …"/></div>
+    <div class="form-row">
+      <div class="form-field"><label>Kategori</label><input id="mdCat" type="text" placeholder="Major / Minor"/></div>
+      <div class="form-field"><label>Poin Default</label><input id="mdPt" type="number" min="1" max="4" placeholder="1–4"/></div>
+    </div>
+    <div id="mdErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalDefect')">Batal</button>
+      <button class="btn-confirm" id="mdSave" onclick="saveDefect()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirm Delete -->
+<div id="modalConfirm" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:360px;width:100%">
+    <div class="modal-title" style="color:var(--danger)">🗑️ Konfirmasi Hapus</div>
+    <p id="confirmMsg" style="font-size:.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6"></p>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalConfirm')">Batal</button>
+      <button class="m-confirm" id="confirmOk">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

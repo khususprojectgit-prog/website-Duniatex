@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QC Dashboard — Duniatex</title>
+<meta name="description" content="Quality Control dashboard sistem inspeksi kain Duniatex"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+main{padding:1.1rem;max-width:740px;margin:0 auto}
+.hl{display:flex;align-items:center;gap:.7rem}
+.lm{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 12px var(--accent-glow);flex-shrink:0}
+.bn{font-size:.95rem;font-weight:800;color:var(--text)}
+.br{font-size:.68rem;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.un{font-size:.78rem;color:var(--muted)}
+.hr{display:flex;align-items:center;gap:.65rem}
+.btn-out{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);border-radius:var(--radius-sm);font:.78rem 'Inter';font-weight:600;font-family:inherit;padding:.45rem .9rem;cursor:pointer;transition:background .2s}
+.btn-out:hover{background:rgba(220,38,38,.16)}
+.btn-ref{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);font:.78rem 'Inter',sans-serif;padding:.38rem .8rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;box-shadow:var(--shadow)}
+.btn-ref:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hl">
+    <div class="lm">🔍</div>
+    <div>
+      <div class="bn">Duniatex <span style="font-size:.7rem;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;border-radius:6px;padding:.12rem .5rem;vertical-align:middle;font-weight:700;letter-spacing:.04em">QC</span></div>
+      <div class="un" id="uname">Quality Control</div>
+    </div>
+  </div>
+  <div class="hr">
+    <button class="btn-out" id="logoutBtn">Keluar</button>
+  </div>
+</header>
+
+<main>
+  <div class="filter-bar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="ftab active" data-status="SUBMITTED">Menunggu Validasi <span class="ftab-count" id="cntSub">—</span></button>
+      <button class="ftab" data-status="VALIDATED">Validated <span class="ftab-count" id="cntVal">—</span></button>
+      <button class="ftab" data-status="REJECTED">Rejected <span class="ftab-count" id="cntRej">—</span></button>
+    </div>
+    <button class="btn-ref" id="refreshBtn">⟳ Refresh</button>
+  </div>
+  <div id="content"></div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const BASE=`http://127.0.0.1:8000/api`;
+const token=localStorage.getItem('token');
+const role=localStorage.getItem('role');
+if(!token) location.replace('index.html');
+if(role&&role!=='qc'&&role!=='admin') location.replace({operator:'dashboard.html',admin:'admin.html'}[role]||'index.html');
+document.getElementById('uname').textContent=localStorage.getItem('user_name')||'QC';
+
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const auth=()=>({Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json'});
+let tt;
+function toast(m,c='',d=2800){const e=document.getElementById('toast');e.textContent=m;e.className=c?`show ${c}`:'show';clearTimeout(tt);tt=setTimeout(()=>e.className='',d);}
+
+let currentStatus='SUBMITTED';
+
+function showSkeleton(){
+  document.getElementById('content').innerHTML=`
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Roll</th><th>Mesin</th><th>Klien</th><th>Operator</th><th>Poin</th><th>Score</th><th>Result</th><th>Status</th><th></th></tr></thead>
+      <tbody>${[1,2,3,4].map(()=>`<tr>${Array(9).fill(`<td><div class="sk" style="height:14px;width:80%;border-radius:4px"></div></td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+async function load(status){
+  currentStatus=status;
+  showSkeleton();
+  try{
+    const res=await fetch(`${BASE}/qc/inspections?status=${status}`,{headers:auth()});
+    if(res.status===401){localStorage.clear();location.replace('index.html');return;}
+    const data=await res.json();
+    const list=Array.isArray(data)?data:(data.data??[]);
+    const arr=Array.isArray(list)?list:(list.data??[]);
+    render(arr,status);
+    // update counts for current tab
+    const cntMap={SUBMITTED:'cntSub',VALIDATED:'cntVal',REJECTED:'cntRej'};
+    if(cntMap[status]) document.getElementById(cntMap[status]).textContent=arr.length;
+  }catch(_){
+    document.getElementById('content').innerHTML=`<div class="state-box"><div class="si">⚠️</div><h3>Gagal Memuat Data</h3><p>Periksa koneksi ke server backend.</p></div>`;
+  }
+}
+
+function pillHtml(s){
+  const u=(s||'').toUpperCase();
+  const map = {
+    NEW:         ['sp-new', 'NEW'],
+    IN_PROGRESS: ['sp-ip',  'IN PROGRESS'],
+    SUBMITTED:   ['sp-sub', 'SUBMITTED'],
+    VALIDATED:   ['sp-val', 'VALIDATED'],
+    PENDING:     ['sp-pnd', 'PENDING'],
+    REJECTED:    ['sp-rej', 'REJECTED'],
+    COMPLETED:   ['sp-cmp', 'COMPLETED'],
+  };
+  const [cls, label] = map[u] ?? ['sp-new', u || '—'];
+  return `<span class="spill ${cls}">${label}</span>`;
+}
+
+function resultHtml(r){
+  const u=(r||'').toUpperCase();
+  if(u==='PASS') return `<span class="res-pass">● PASS</span>`;
+  if(u==='FAIL') return `<span class="res-fail">● FAIL</span>`;
+  return `<span style="color:var(--mu);font-size:.8rem">—</span>`;
+}
+
+function render(list,status){
+  const el=document.getElementById('content');
+  if(!list.length){
+    const msgs={
+      SUBMITTED:'Tidak ada inspeksi yang menunggu validasi.',
+      VALIDATED:'Belum ada inspeksi yang divalidasi.',
+      REJECTED: 'Belum ada inspeksi yang ditolak.',
+    };
+    el.innerHTML=`<div class="state-box"><div class="si">${status==='SUBMITTED'?'✅':'📋'}</div><h3>${msgs[status]||'Tidak ada data.'}</h3></div>`;
+    return;
+  }
+  const rows=list.map(i=>{
+    const roll=i.roll??{};
+    const machine=roll.machine??{};
+    const req=roll.request??roll.inspection_request??{};
+    const client=req.client??{};
+    const operator=i.operator??{};
+    const score=parseFloat(i.score??0).toFixed(2);
+    return `<tr>
+      <td><div class="tc">${esc(roll.roll_code??'—')}</div><div class="tm">${esc(roll.batch_number??'')}</div></td>
+      <td class="tc">${esc(machine.machine_name??'—')}</td>
+      <td class="tc">${esc(client.client_name??'—')}</td>
+      <td class="tc">${esc(operator.name??'—')}</td>
+      <td><span style="font-weight:700;color:var(--ac)">${esc(i.total_points??'—')}</span></td>
+      <td><span style="font-weight:700;font-variant-numeric:tabular-nums">${score}</span></td>
+      <td>${resultHtml(i.result)}</td>
+      <td>${pillHtml(i.status)}</td>
+      <td><button class="btn-detail" onclick="goDetail(${i.id})">Lihat Detail →</button></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Roll Code</th><th>Mesin</th><th>Klien</th><th>Operator</th>
+      <th>Poin</th><th>Score</th><th>Result</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function goDetail(id){
+  localStorage.setItem('qc_inspection_id',String(id));
+  location.href='qc-detail.html';
+}
+
+// Filter tabs
+document.getElementById('filterTabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.ftab');
+  if(!btn) return;
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  load(btn.dataset.status);
+});
+
+document.getElementById('refreshBtn').addEventListener('click',()=>load(currentStatus));
+document.getElementById('logoutBtn').addEventListener('click',async()=>{
+  try{await fetch(`${BASE}/logout`,{method:'POST',headers:auth()});}catch(_){}
+  localStorage.clear();location.replace('index.html');
+});
+
+// Auto-refresh every 45s
+setInterval(()=>load(currentStatus),45000);
+load('SUBMITTED');
+</script>
+</body>
+</html>

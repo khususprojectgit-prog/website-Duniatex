@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Analytics — Duniatex Inspection</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+main{padding:1.25rem;max-width:1200px;margin:0 auto}
+.page-title{font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end;margin-bottom:1.1rem}
+.filter-bar label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.25rem}
+.filter-bar input,.filter-bar select{height:34px;font-size:.82rem;padding:0 .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);min-width:130px}
+.fbtn{height:34px;padding:0 .85rem;border:none;border-radius:var(--radius-sm);font:.82rem 'Inter',sans-serif;font-weight:700;cursor:pointer}
+.fbtn-apply{background:var(--accent);color:#fff}
+.fbtn-reset{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.fbtn-csv{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success)}
+.fbtn-print{background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.7rem;margin-bottom:1.1rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem;min-width:0}
+.kpi-label{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.3rem}
+.kpi-val{font-size:1.7rem;font-weight:800;line-height:1;margin-bottom:.2rem}
+.kpi-sub{font-size:.72rem;color:var(--muted)}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.1rem}
+@media(max-width:720px){.chart-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.chart-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.chart-wrap{position:relative;height:240px}
+.tab-tbl{display:flex;gap:.4rem;margin-bottom:.7rem;border-bottom:2px solid var(--border);padding-bottom:0}
+.ttab{background:none;border:none;font:.8rem 'Inter',sans-serif;font-weight:600;color:var(--muted);padding:.4rem .8rem .55rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.ttab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tbl-panel{display:none}.tbl-panel.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;padding:.5rem .7rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:.55rem .7rem;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1rem}
+.sk{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:6px;height:14px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.pager{display:flex;gap:.4rem;margin-top:.75rem;align-items:center;justify-content:flex-end;font-size:.8rem;color:var(--muted)}
+.pager button{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.25rem .65rem;cursor:pointer;font:.8rem 'Inter',sans-serif;color:var(--text)}
+.pager button:disabled{opacity:.4;cursor:not-allowed}
+.res-pass{color:var(--success);font-weight:700}
+.res-fail{color:var(--danger);font-weight:700}
+.badge-admin{display:inline-block;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);color:var(--warning);border-radius:6px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;letter-spacing:.04em;text-transform:uppercase}
+@media print{
+  .filter-bar,.pager,.tab-tbl,.fbtn{display:none!important}
+  .chart-grid{break-inside:avoid}
+  .tbl-panel{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div style="width:38px;height:38px;background:linear-gradient(135deg,#059669,#4f46e5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📊</div>
+    <div>
+      <div class="header-title">Duniatex <span class="badge-admin">Analytics</span></div>
+      <div class="header-sub" id="uname">Administrator</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <a href="admin.html" style="color:var(--accent);font-size:.82rem;font-weight:600;text-decoration:none">← Admin</a>
+    <button class="btn-logout" id="logoutBtn">Keluar</button>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">📊 Inspection Analytics &amp; Reports</div>
+
+  <!-- Filters -->
+  <div class="filter-bar" id="filterBar">
+    <div><label>Dari Tanggal</label><input type="date" id="fFrom"/></div>
+    <div><label>Sampai Tanggal</label><input type="date" id="fTo"/></div>
+    <div><label>Mesin</label><select id="fMachine"><option value="">Semua Mesin</option></select></div>
+    <div><label>Klien</label><select id="fClient"><option value="">Semua Klien</option></select></div>
+    <div><label>Operator</label><select id="fOperator"><option value="">Semua Operator</option></select></div>
+    <div><label>Hasil</label>
+      <select id="fResult">
+        <option value="">Semua</option>
+        <option value="PASS">PASS</option>
+        <option value="FAIL">FAIL</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:flex-end">
+      <button class="fbtn fbtn-apply" id="btnApply">🔍 Terapkan</button>
+      <button class="fbtn fbtn-reset" id="btnReset">↺ Reset</button>
+      <button class="fbtn fbtn-csv"   id="btnCsv">⬇ CSV</button>
+      <button class="fbtn fbtn-print" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi"><div class="kpi-label">Total Inspeksi</div><div class="kpi-val" id="kTotal" style="color:var(--accent)">—</div></div>
+    <div class="kpi"><div class="kpi-label">PASS Rate</div><div class="kpi-val" id="kPassRate" style="color:var(--success)">—</div><div class="kpi-sub" id="kPassN"></div></div>
+    <div class="kpi"><div class="kpi-label">FAIL Rate</div><div class="kpi-val" id="kFailRate" style="color:var(--danger)">—</div><div class="kpi-sub" id="kFailN"></div></div>
+    <div class="kpi"><div class="kpi-label">Avg Score</div><div class="kpi-val" id="kAvgScore" style="color:var(--text)">—</div><div class="kpi-sub">per 100 m</div></div>
+    <div class="kpi"><div class="kpi-label">Total Cacat</div><div class="kpi-val" id="kDefects" style="color:var(--warning)">—</div></div>
+    <div class="kpi"><div class="kpi-label">Pending QC</div><div class="kpi-val" id="kPending" style="color:var(--accent-2)">—</div></div>
+    <div class="kpi"><div class="kpi-label">Request Selesai</div><div class="kpi-val" id="kCompleted" style="color:var(--success)">—</div></div>
+    <div class="kpi"><div class="kpi-label">Re-Inspeksi</div><div class="kpi-val" id="kReinspect" style="color:var(--danger)">—</div></div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">PASS vs FAIL</div>
+      <div class="chart-wrap"><canvas id="chartPF"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Jenis Cacat Terbanyak</div>
+      <div class="chart-wrap"><canvas id="chartDef"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Tren Inspeksi (30 Hari)</div>
+      <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Performa Mesin (Avg Score)</div>
+      <div class="chart-wrap"><canvas id="chartMach"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Tables -->
+  <div class="tbl-wrap">
+    <div style="padding:.75rem 1rem .1rem">
+      <div class="tab-tbl">
+        <button class="ttab active" data-t="inspections">Inspeksi</button>
+        <button class="ttab" data-t="defects">Analisis Cacat</button>
+        <button class="ttab" data-t="machines">Performa Mesin</button>
+      </div>
+    </div>
+
+    <div class="tbl-panel active" id="t-inspections">
+      <table id="tblInsp">
+        <thead><tr>
+          <th>ID</th><th>Roll</th><th>Klien</th><th>Mesin</th>
+          <th>Operator</th><th>Score</th><th>Hasil</th><th>Status</th><th>Tanggal</th>
+        </tr></thead>
+        <tbody id="bodyInsp"><tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
+      </table>
+      <div class="pager" id="pagerInsp"></div>
+    </div>
+
+    <div class="tbl-panel" id="t-defects">
+      <table>
+        <thead><tr><th>Jenis Cacat</th><th>Frekuensi</th><th>Total Poin</th><th>Avg Posisi (m)</th></tr></thead>
+        <tbody id="bodyDef"><tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="tbl-panel" id="t-machines">
+      <table>
+        <thead><tr><th>Mesin</th><th>Total</th><th>PASS%</th><th>FAIL%</th><th>Avg Score</th><th>Ditolak</th></tr></thead>
+        <tbody id="bodyMach"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const BASE  = 'http://127.0.0.1:8000/api';
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+if (!token) location.replace('index.html');
+if (role && role !== 'admin') location.replace('index.html');
+
+const $  = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const auth = () => ({ Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' });
+
+let charts = {};
+let inspPage = 1;
+let inspData = { data: [], last_page: 1 };
+
+// ── Logout ────────────────────────────────────────────────
+$('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${BASE}/logout`, { method: 'POST', headers: auth() });
+  localStorage.clear(); location.replace('index.html');
+});
+const me = localStorage.getItem('user_name');
+if (me) $('uname').textContent = me;
+
+// ── Toast ─────────────────────────────────────────────────
+let tt;
+function toast(m, c='') {
+  const e = $('toast'); e.textContent = m; e.className = c ? `show ${c}` : 'show';
+  clearTimeout(tt); tt = setTimeout(() => e.className = '', 2800);
+}
+
+// ── Filters ───────────────────────────────────────────────
+function getFilters() {
+  return {
+    date_from:   $('fFrom').value    || undefined,
+    date_to:     $('fTo').value      || undefined,
+    machine_id:  $('fMachine').value || undefined,
+    client_id:   $('fClient').value  || undefined,
+    operator_id: $('fOperator').value|| undefined,
+    result:      $('fResult').value  || undefined,
+  };
+}
+function buildQS(extra = {}) {
+  const p = new URLSearchParams();
+  Object.entries({...getFilters(), ...extra}).forEach(([k,v]) => v && p.set(k, v));
+  return p.toString();
+}
+
+// ── Load dropdown options ──────────────────────────────────
+async function loadOptions() {
+  const [mRes, cRes, uRes] = await Promise.all([
+    fetch(`${BASE}/admin/machines?per_page=100`, { headers: auth() }),
+    fetch(`${BASE}/admin/clients?per_page=100`,  { headers: auth() }),
+    fetch(`${BASE}/admin/users?per_page=100`,     { headers: auth() }),
+  ]);
+  const [m, c, u] = await Promise.all([mRes.json(), cRes.json(), uRes.json()]);
+  (m.data?.data ?? []).forEach(x => {
+    const o = document.createElement('option'); o.value = x.id; o.textContent = x.machine_name;
+    $('fMachine').appendChild(o);
+  });
+  (c.data?.data ?? []).forEach(x => {
+    const o = document.createElement('option'); o.value = x.id; o.textContent = x.client_name;
+    $('fClient').appendChild(o);
+  });
+  (u.data?.data ?? []).filter(x => x.role === 'operator').forEach(x => {
+    const o = document.createElement('option'); o.value = x.id; o.textContent = x.name;
+    $('fOperator').appendChild(o);
+  });
+}
+
+// ── KPI Summary ───────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/summary?${buildQS()}`, { headers: auth() });
+    const data = (await res.json()).data;
+    $('kTotal').textContent    = data.total_inspections;
+    $('kPassRate').textContent = data.pass_rate + '%';
+    $('kPassN').textContent    = data.pass_count + ' inspeksi';
+    $('kFailRate').textContent = data.fail_rate + '%';
+    $('kFailN').textContent    = data.fail_count + ' inspeksi';
+    $('kAvgScore').textContent = data.avg_score;
+    $('kDefects').textContent  = data.total_defects;
+    $('kPending').textContent  = data.pending_qc;
+    $('kCompleted').textContent= data.completed_requests;
+    $('kReinspect').textContent= data.reinspection_count;
+    renderPFChart(data.pass_count, data.fail_count);
+  } catch { toast('Gagal memuat KPI', 'err'); }
+}
+
+// ── Trend Chart ───────────────────────────────────────────
+async function loadTrends() {
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/trends?${buildQS({days:30})}`, { headers: auth() });
+    const rows = (await res.json()).data ?? [];
+    const labels   = rows.map(r => r.date);
+    const totals   = rows.map(r => r.total);
+    const passed   = rows.map(r => r.passed);
+    const failed   = rows.map(r => r.failed);
+    if (charts.trend) charts.trend.destroy();
+    charts.trend = new Chart($('chartTrend'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'Total', data: totals, borderColor:'#4f46e5', backgroundColor:'rgba(79,70,229,.1)', tension:.4, fill:true, pointRadius:2 },
+          { label:'PASS',  data: passed, borderColor:'#059669', backgroundColor:'transparent', tension:.4, pointRadius:2 },
+          { label:'FAIL',  data: failed, borderColor:'#dc2626', backgroundColor:'transparent', tension:.4, pointRadius:2 },
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ boxWidth:10, font:{size:10} } } }, scales:{ y:{ beginAtZero:true, ticks:{font:{size:10}} }, x:{ ticks:{font:{size:9}, maxTicksLimit:10} } } }
+    });
+  } catch {}
+}
+
+// ── Pass/Fail Doughnut ────────────────────────────────────
+function renderPFChart(pass, fail) {
+  if (charts.pf) charts.pf.destroy();
+  charts.pf = new Chart($('chartPF'), {
+    type: 'doughnut',
+    data: {
+      labels: ['PASS', 'FAIL'],
+      datasets: [{ data:[pass, fail], backgroundColor:['#059669','#dc2626'], borderWidth:0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } } }
+    }
+  });
+}
+
+// ── Defect Chart & Table ──────────────────────────────────
+async function loadDefects() {
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/defects?${buildQS()}`, { headers: auth() });
+    const rows = (await res.json()).data ?? [];
+    if (charts.def) charts.def.destroy();
+    charts.def = new Chart($('chartDef'), {
+      type: 'bar',
+      data: {
+        labels: rows.slice(0,8).map(r => r.defect_type),
+        datasets: [{ label:'Frekuensi', data: rows.slice(0,8).map(r => r.count),
+          backgroundColor:'rgba(124,58,237,.7)', borderRadius:4 }]
+      },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ beginAtZero:true, ticks:{font:{size:10}} }, y:{ ticks:{font:{size:9}} } }
+      }
+    });
+    // Table
+    $('bodyDef').innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${esc(r.defect_type)}</td>
+        <td><strong>${r.count}</strong></td>
+        <td>${r.total_points}</td>
+        <td>${r.avg_position} m</td>
+      </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
+  } catch {}
+}
+
+// ── Machine Chart & Table ─────────────────────────────────
+async function loadMachines() {
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/machines?${buildQS()}`, { headers: auth() });
+    const rows = (await res.json()).data ?? [];
+    if (charts.mach) charts.mach.destroy();
+    charts.mach = new Chart($('chartMach'), {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.machine),
+        datasets: [{ label:'Avg Score', data: rows.map(r => r.avg_score),
+          backgroundColor: rows.map(r => r.avg_score <= 24 ? 'rgba(5,150,105,.7)' : 'rgba(220,38,38,.7)'),
+          borderRadius:4 }]
+      },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{ x:{ beginAtZero:true, max:48, ticks:{font:{size:10}} }, y:{ ticks:{font:{size:9}} } }
+      }
+    });
+    $('bodyMach').innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${esc(r.machine)}</td>
+        <td>${r.total}</td>
+        <td style="color:var(--success)">${r.pass_rate}%</td>
+        <td style="color:var(--danger)">${r.fail_rate}%</td>
+        <td>${r.avg_score}</td>
+        <td>${r.rejection_count}</td>
+      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
+  } catch {}
+}
+
+// ── Inspection Table ──────────────────────────────────────
+async function loadInspections(page = 1) {
+  inspPage = page;
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/inspections?${buildQS({page})}`, { headers: auth() });
+    const json = await res.json();
+    const rows = json.data?.data ?? [];
+    const meta = json.data ?? {};
+    inspData   = meta;
+    $('bodyInsp').innerHTML = rows.length ? rows.map(r => {
+      const status = typeof r.status === 'object' ? r.status?.value : r.status;
+      return `<tr>
+        <td>${r.id}</td>
+        <td><code>${esc(r.roll?.roll_code??'-')}</code></td>
+        <td>${esc(r.roll?.inspection_request?.client?.client_name??'-')}</td>
+        <td>${esc(r.roll?.machine?.machine_name??'-')}</td>
+        <td>${esc(r.operator?.name??'-')}</td>
+        <td>${parseFloat(r.score??0).toFixed(2)}</td>
+        <td class="res-${(r.result||'').toLowerCase()}">${r.result??'-'}</td>
+        <td><span class="spill sp-${(status||'').toLowerCase().replace('_','-')}">${status??'-'}</span></td>
+        <td style="font-size:.75rem;color:var(--muted)">${r.created_at?.slice(0,10)??'-'}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
+
+    // Pager
+    const lp = meta.last_page ?? 1;
+    $('pagerInsp').innerHTML = `
+      <span>${meta.total??0} inspeksi</span>
+      <button onclick="loadInspections(${page-1})" ${page<=1?'disabled':''}>‹</button>
+      <span>Hal ${page} / ${lp}</span>
+      <button onclick="loadInspections(${page+1})" ${page>=lp?'disabled':''}>›</button>`;
+  } catch {}
+}
+
+// ── CSV Export ────────────────────────────────────────────
+$('btnCsv').addEventListener('click', async () => {
+  $('btnCsv').textContent = '⏳ Downloading…';
+  try {
+    const res  = await fetch(`${BASE}/admin/analytics/export/csv?${buildQS()}`, { headers: auth() });
+    if (!res.ok) { toast('Gagal export CSV', 'err'); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `duniatex_report_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV berhasil diunduh ✓', 'ok');
+  } catch { toast('Gagal export CSV', 'err'); }
+  finally { $('btnCsv').textContent = '⬇ CSV'; }
+});
+
+// ── Table Tabs ────────────────────────────────────────────
+document.querySelectorAll('.ttab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ttab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tbl-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('t-' + btn.dataset.t).classList.add('active');
+  });
+});
+
+// ── Apply / Reset ─────────────────────────────────────────
+async function refresh() {
+  await Promise.all([
+    loadSummary(), loadTrends(), loadDefects(),
+    loadMachines(), loadInspections(1)
+  ]);
+}
+
+$('btnApply').addEventListener('click', refresh);
+$('btnReset').addEventListener('click', () => {
+  ['fFrom','fTo'].forEach(id => $(id).value = '');
+  ['fMachine','fClient','fOperator','fResult'].forEach(id => $(id).value = '');
+  refresh();
+});
+
+// ── Init ──────────────────────────────────────────────────
+(async () => {
+  await loadOptions();
+  // Default: last 30 days
+  const today = new Date();
+  const from  = new Date(today); from.setDate(from.getDate() - 29);
+  $('fTo').value   = today.toISOString().slice(0,10);
+  $('fFrom').value = from.toISOString().slice(0,10);
+  await refresh();
+})();
+</script>
+</body>
+</html>

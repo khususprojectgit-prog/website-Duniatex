@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daftar Roll — Duniatex Inspection</title>
+  <meta name="description" content="Daftar roll kain tersedia untuk inspeksi operator Duniatex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    main { padding: 1.25rem; max-width: 660px; margin: 0 auto; }
+
+    /* ── Active Inspection Banner ── */
+    #activeBanner {
+      display: none;
+      background: linear-gradient(135deg,var(--accent-light),rgba(124,58,237,.06));
+      border: 1px solid rgba(79,70,229,.25);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: var(--shadow);
+    }
+    #activeBanner:hover { border-color: var(--accent); background: rgba(79,70,229,.1); }
+    .banner-inner { display: flex; align-items: center; gap: .85rem; }
+    .banner-pulse {
+      width: 11px; height: 11px;
+      background: var(--accent); border-radius: 50%; flex-shrink: 0;
+      box-shadow: 0 0 0 0 var(--accent-glow);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--accent-glow)} 50%{box-shadow:0 0 0 7px rgba(79,70,229,0)} }
+    .banner-text { flex: 1; }
+    .banner-title { font-size: .9rem; font-weight: 700; color: var(--accent); }
+    .banner-sub   { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+    .banner-arrow { color: var(--accent); font-size: 1.1rem; }
+
+    /* ── Roll count badge ── */
+    .roll-count {
+      background: var(--accent-light); color: var(--accent);
+      border: 1px solid rgba(79,70,229,.2);
+      border-radius: 20px; font-size: .72rem; font-weight: 700;
+      padding: .15rem .55rem;
+    }
+
+    /* ── Roll Cards ── */
+    .roll-list { display: flex; flex-direction: column; gap: .75rem; }
+    .roll-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.15rem;
+      transition: all .2s; position: relative; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .roll-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+      opacity: 0; transition: opacity .2s;
+    }
+    .roll-card:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .roll-card:hover::before { opacity: 1; }
+    .roll-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .85rem; }
+    .roll-code { font-size: 1.1rem; font-weight: 800; letter-spacing: -.3px; color: var(--text); }
+    .roll-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .75rem; margin-bottom: 1rem; }
+    .meta-item { }
+    .meta-label { font-size: .67rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .meta-value { font-size: .875rem; font-weight: 600; color: var(--text); margin-top: .1rem; }
+    .meta-value.mono { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .machine-tag {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: var(--accent-light); border: 1px solid rgba(79,70,229,.2);
+      border-radius: 7px; padding: .2rem .6rem;
+      font-size: .78rem; font-weight: 600; color: var(--accent);
+    }
+    .btn-start {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      font-size: .95rem; font-weight: 700; font-family: inherit;
+      padding: .85rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      display: flex; align-items: center; justify-content: center; gap: .45rem;
+    }
+    .btn-start:active { transform: scale(.98); opacity: .9; }
+    .btn-start:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    .last-update { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 1.5rem; }
+    .btn-refresh.spinning .refresh-icon { animation: spin .6s linear infinite; }
+    .refresh-icon { display: inline-block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">🧵</div>
+    <div>
+      <div class="brand-name">Duniatex <span class="badge-role">Operator</span></div>
+      <div class="user-name" id="userName">—</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-logout" id="logoutBtn">Keluar</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Active inspection resume banner -->
+  <div id="activeBanner" role="button" tabindex="0">
+    <div class="banner-inner">
+      <div class="banner-pulse"></div>
+      <div class="banner-text">
+        <div class="banner-title">Inspeksi Sedang Berjalan</div>
+        <div class="banner-sub" id="bannerSub">Klik untuk melanjutkan</div>
+      </div>
+      <div class="banner-arrow">→</div>
+    </div>
+  </div>
+
+  <!-- Roll list section -->
+  <div class="section-bar">
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      <span class="section-label">Roll Perlu Diinspeksi</span>
+      <span class="roll-count" id="rollCount" style="display:none"></span>
+    </div>
+    <button class="btn-refresh" id="refreshBtn">
+      <span class="refresh-icon">⟳</span> Refresh
+    </button>
+  </div>
+
+  <div id="rollList"></div>
+  <div class="last-update" id="lastUpdate" style="display:none"></div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const BASE  = 'http://127.0.0.1:8000/api';
+  const token = localStorage.getItem('token');
+  if (!token) window.location.replace('index.html');
+
+  // Role guard
+  const _role = localStorage.getItem('role');
+  if (_role && _role !== 'operator') {
+    window.location.replace({ admin: 'admin.html', qc: 'qc.html' }[_role] || 'index.html');
+  }
+
+  // User display
+  const uname = localStorage.getItem('user_name');
+  if (uname) document.getElementById('userName').textContent = uname;
+
+  // ── Helpers ─────────────────────────────────────────
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function auth() {
+    return { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' };
+  }
+
+  let toastT;
+  function toast(msg, type = '', dur = 2800) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = type ? `show ${type}` : 'show';
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.className = '', dur);
+  }
+
+  // ── Active inspection check ──────────────────────────
+  async function checkActiveInspection() {
+    try {
+      const res  = await fetch(`${BASE}/operator/inspections?status=IN_PROGRESS`, { headers: auth() });
+      if (!res.ok) return;
+      const data = await res.json();
+      // Unwrap successPaginated: { data: { data: [...inspections...] } }
+      const list = Array.isArray(data)           ? data
+                 : Array.isArray(data.data)       ? data.data
+                 : Array.isArray(data.data?.data) ? data.data.data
+                 : [];
+      const active = list[0] ?? null;
+      if (!active) return;
+
+      localStorage.setItem('inspection_id', active.id);
+      const banner  = document.getElementById('activeBanner');
+      const rollCode = active.roll?.roll_code ?? `#${active.id}`;
+      document.getElementById('bannerSub').textContent =
+        `Roll: ${rollCode} — Klik untuk melanjutkan inspeksi`;
+      banner.style.display = 'block';
+    } catch (_) {}
+  }
+
+  document.getElementById('activeBanner').addEventListener('click', () => {
+    window.location.href = 'inspection.html';
+  });
+  document.getElementById('activeBanner').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') window.location.href = 'inspection.html';
+  });
+
+  // ── Skeleton ─────────────────────────────────────────
+  function showSkeleton() {
+    document.getElementById('rollList').innerHTML = [1,2,3].map(() => `
+      <div class="sk-card">
+        <div class="skeleton sk-line w-60"></div>
+        <div class="skeleton sk-line w-40"></div>
+        <div class="skeleton sk-line w-80" style="margin-top:.6rem"></div>
+        <div class="skeleton sk-btn"></div>
+      </div>`).join('');
+    document.getElementById('rollCount').style.display = 'none';
+    document.getElementById('lastUpdate').style.display = 'none';
+  }
+
+  // ── Load rolls ───────────────────────────────────────
+  async function loadRolls() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.classList.add('spinning');
+    showSkeleton();
+
+    try {
+      const res = await fetch(`${BASE}/operator/rolls`, { headers: auth() });
+
+      if (res.status === 401) { localStorage.clear(); window.location.replace('index.html'); return; }
+
+      const data  = await res.json();
+      // successPaginated() structure: { data: { current_page, data: [...], total, ... } }
+      // data.data is the Laravel paginator object; data.data.data is the actual array.
+      const rolls = Array.isArray(data)            ? data           // legacy flat array
+                  : Array.isArray(data.data)        ? data.data      // flat data array
+                  : Array.isArray(data.data?.data)  ? data.data.data // paginated
+                  : [];
+
+      renderRolls(rolls);
+
+      // Update last update timestamp
+      const lu = document.getElementById('lastUpdate');
+      lu.textContent = `Diperbarui: ${new Date().toLocaleTimeString('id-ID')}`;
+      lu.style.display = 'block';
+
+    } catch (_) {
+      document.getElementById('rollList').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">⚠️</div>
+          <h3>Gagal Memuat Data</h3>
+          <p>Tidak dapat terhubung ke server.<br>Pastikan backend berjalan dan coba refresh.</p>
+        </div>`;
+    } finally {
+      refreshBtn.classList.remove('spinning');
+    }
+  }
+
+  // ── Status pill helper ───────────────────────────────────
+  function rollStatusPill(status) {
+    const s = (status || '').toUpperCase();
+    const map = {
+      NEW:         ['pill-new', 'NEW'],
+      IN_PROGRESS: ['pill-ip',  'IN PROGRESS'],
+      SUBMITTED:   ['pill-sub', 'SUBMITTED'],
+      VALIDATED:   ['pill-val', 'VALIDATED'],
+      PENDING:     ['pill-pnd', 'PENDING — Re-inspection Required'],
+    };
+    const [cls, label] = map[s] ?? ['pill-new', s];
+    return `<span class="status-pill ${cls}">${label}</span>`;
+  }
+
+  // ── Render roll cards ─────────────────────────────────
+  function renderRolls(rolls) {
+    const container = document.getElementById('rollList');
+    // Show rolls that operator can act on: NEW (first inspection) or PENDING (re-inspection after QC reject)
+    const available = rolls.filter(r => ['NEW', 'PENDING'].includes((r.status || '').toUpperCase()));
+
+    const countEl = document.getElementById('rollCount');
+    if (available.length > 0) {
+      countEl.textContent = available.length;
+      countEl.style.display = 'inline-block';
+    } else {
+      countEl.style.display = 'none';
+    }
+
+    if (available.length === 0) {
+      container.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">📋</div>
+          <h3>Tidak Ada Roll yang Perlu Diinspeksi</h3>
+          <p>Saat ini tidak ada roll berstatus NEW atau PENDING.<br>Roll baru akan muncul ketika Admin / QC menambahkannya.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    const list = document.createElement('div');
+    list.className = 'roll-list';
+
+    available.forEach(roll => {
+      const status      = (roll.status || '').toUpperCase();
+      const isPending   = status === 'PENDING';
+      const machineName = roll.machine?.machine_name ?? '—';
+      const reqCode     = roll.request?.request_code ?? roll.inspection_request?.request_code ?? '—';
+      const client      = roll.request?.client?.client_name ?? roll.inspection_request?.client?.client_name ?? '';
+      const length      = parseFloat(roll.length_meter ?? 0).toFixed(0);
+      const batch       = roll.batch_number ?? '—';
+
+      const card = document.createElement('div');
+      card.className = 'roll-card';
+      if (isPending) card.style.borderColor = 'rgba(239,68,68,.35)';
+      card.id = `roll-card-${roll.id}`;
+      card.innerHTML = `
+        <div class="roll-top">
+          <div class="roll-code">${esc(roll.roll_code)}</div>
+          ${rollStatusPill(status)}
+        </div>
+        ${isPending ? `<div style="font-size:.78rem;color:#ef4444;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem">⚠ Dikembalikan QC — perlu inspeksi ulang</div>` : ''}
+        <div class="roll-meta-grid">
+          <div class="meta-item">
+            <div class="meta-label">Mesin</div>
+            <div class="meta-value">
+              <span class="machine-tag">⚙ ${esc(machineName)}</span>
+            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Panjang</div>
+            <div class="meta-value mono">${esc(length)} m</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Batch</div>
+            <div class="meta-value">${esc(batch)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Request</div>
+            <div class="meta-value">${esc(reqCode)}${client ? ` · ${esc(client)}` : ''}</div>
+          </div>
+        </div>
+        <button class="btn-start" id="start-${roll.id}" style="${isPending ? 'background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 4px 16px rgba(239,68,68,.28)' : ''}">
+          ${isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi'}
+        </button>`;
+
+      card.querySelector(`#start-${roll.id}`)
+          .addEventListener('click', () => startInspection(roll.id, card.querySelector(`#start-${roll.id}`), isPending));
+
+      list.appendChild(card);
+    });
+
+    container.appendChild(list);
+  }
+
+  // ── Start inspection ──────────────────────────────────
+  async function startInspection(rollId, btn, isPending = false) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>&nbsp; Memulai…';
+    const defaultLabel = isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi';
+
+    try {
+      const res  = await fetch(`${BASE}/operator/rolls/${rollId}/start`, {
+        method: 'POST', headers: auth(),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast(data.message || 'Gagal memulai inspeksi.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = defaultLabel;
+        return;
+      }
+
+      // Save inspection id — handle various envelope shapes
+      const inspId = data.data?.id ?? data.id ?? data.inspection?.id;
+      if (inspId) localStorage.setItem('inspection_id', String(inspId));
+
+      toast(isPending ? 'Inspeksi ulang dimulai!' : 'Inspeksi dimulai!', 'success', 1200);
+      setTimeout(() => window.location.href = 'inspection.html', 800);
+
+    } catch (_) {
+      toast('Koneksi gagal. Coba lagi.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = defaultLabel;
+    }
+  }
+
+  // ── Logout ────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await fetch(`${BASE}/logout`, { method: 'POST', headers: auth() }); } catch(_) {}
+    localStorage.clear();
+    window.location.replace('index.html');
+  });
+
+  // ── Refresh ───────────────────────────────────────────
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    checkActiveInspection();
+    loadRolls();
+  });
+
+  // ── Auto-refresh every 45s ────────────────────────────
+  setInterval(loadRolls, 45_000);
+
+  // ── Init ──────────────────────────────────────────────
+  checkActiveInspection();
+  loadRolls();
+</script>
+</body>
+</html>
