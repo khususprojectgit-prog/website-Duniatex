@@ -11,7 +11,7 @@ class FabricRoll extends Model
     use HasFactory;
 
     protected $fillable = [
-        'request_id', 'roll_code', 'length_meter', 'machine_id', 'batch_number', 'status',
+        'request_id', 'roll_code', 'length_meter', 'machine_id', 'operator_id', 'batch_number', 'status',
     ];
 
     protected function casts(): array
@@ -73,8 +73,37 @@ class FabricRoll extends Model
         return $this->belongsTo(Machine::class);
     }
 
+    public function assignedOperator()
+    {
+        return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    public function inspections()
+    {
+        return $this->hasMany(Inspection::class, 'roll_id');
+    }
+
+    /** Latest inspection attempt for this roll (may be IN_PROGRESS, SUBMITTED, etc.). */
+    public function latestInspection()
+    {
+        return $this->hasOne(Inspection::class, 'roll_id')->latestOfMany();
+    }
+
+    /**
+     * Prefer validated inspection for reporting; falls back to latest if none validated yet.
+     */
+    public function displayInspection()
+    {
+        return $this->hasOne(Inspection::class, 'roll_id')
+            ->ofMany(
+                ['validated_at' => 'max', 'id' => 'max'],
+                fn ($q) => $q->where('status', 'VALIDATED')
+            );
+    }
+
+    /** @deprecated Use latestInspection or displayInspection */
     public function inspection()
     {
-        return $this->hasOne(Inspection::class, 'roll_id');
+        return $this->latestInspection();
     }
 }

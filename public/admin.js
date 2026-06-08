@@ -38,9 +38,16 @@ function showErr(id, msg) {
 }
 
 function pillHtml(s) {
-  const map = { NEW:'sp-new', IN_PROGRESS:'sp-ip', SUBMITTED:'sp-sub',
-    VALIDATED:'sp-val', PENDING:'sp-pnd', REJECTED:'sp-rej', COMPLETED:'sp-cmp' };
-  return `<span class="status-pill ${map[s]||''}">${esc(s||'—')}</span>`;
+  const map = { NEW:'sp-new', IN_PROGRESS:'sp-ip', QC_VALIDATED:'sp-sub',
+    RELEASED:'sp-val', PENDING:'sp-rej', COMPLETED:'sp-cmp' };
+  let label = s || '—';
+  if (label === 'NEW') label = 'BARU';
+  else if (label === 'IN_PROGRESS') label = 'IN PROGRESS';
+  else if (label === 'QC_VALIDATED') label = 'VALIDASI QC';
+  else if (label === 'RELEASED') label = 'RILIS';
+  else if (label === 'COMPLETED') label = 'SELESAI';
+  else if (label === 'PENDING') label = 'RE-INSPEKSI';
+  return `<span class="status-pill ${map[s]||''}">${esc(label)}</span>`;
 }
 
 function roleBadge(r) {
@@ -66,8 +73,18 @@ function skRows(cols, n=4) {
 }
 
 // ── Tab switching ────────────────────────────────────────────
-const tabLoaders = { users: loadUsers, clients: loadClients, machines: loadMachines,
-  requests: loadRequests, rolls: loadRolls, defects: loadDefects };
+const tabLoaders = {
+  users: loadUsers,
+  clients: loadClients,
+  machines: loadMachines,
+  requests: loadRequests,
+  rolls: loadRolls,
+  defects: loadDefects,
+  yarns: loadYarns,
+  settings: loadSettings,
+  gramasi: loadGramasis,
+  'final-data': loadFinalData
+};
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -82,13 +99,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ── Stats ────────────────────────────────────────────────────
 async function loadStats() {
   try {
-    const [u,c,m,r,ro,d] = await Promise.all([
+    const [u,c,m,r,ro,d,y,s] = await Promise.all([
       fetch(`${BASE}/admin/users?per_page=1`, {headers:auth()}).then(r=>r.json()),
       fetch(`${BASE}/admin/clients?per_page=1`, {headers:auth()}).then(r=>r.json()),
       fetch(`${BASE}/admin/machines?per_page=1`, {headers:auth()}).then(r=>r.json()),
       fetch(`${BASE}/admin/inspection-requests?per_page=1`, {headers:auth()}).then(r=>r.json()),
       fetch(`${BASE}/admin/fabric-rolls?per_page=1`, {headers:auth()}).then(r=>r.json()),
       fetch(`${BASE}/admin/defect-types`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/yarn-types`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/settings`, {headers:auth()}).then(r=>r.json()),
     ]);
     $('sUsers').textContent    = u?.data?.total ?? u?.total ?? '—';
     $('sClients').textContent  = c?.data?.total ?? c?.total ?? '—';
@@ -96,6 +115,8 @@ async function loadStats() {
     $('sRequests').textContent = r?.data?.total ?? r?.total ?? '—';
     $('sRolls').textContent    = ro?.data?.total ?? ro?.total ?? '—';
     $('sDefects').textContent  = Array.isArray(d?.data) ? d.data.length : '—';
+    $('sYarns').textContent    = Array.isArray(y?.data) ? y.data.length : '—';
+    $('sSettings').textContent = Array.isArray(s?.data) ? s.data.length : '—';
   } catch(_) {}
 }
 
@@ -131,7 +152,7 @@ function openUserModal(u=null) {
   $('muName').value  = u?.name  ?? '';
   $('muEmail').value = u?.email ?? '';
   $('muPw').value    = '';
-  $('muRole').value  = u?.role   ?? 'operator';
+  $('muRole').value  = u?.role   ?? 'qc';
   $('muStatus').value= u?.status ?? 'active';
   $('muPwHint').style.display = u ? 'inline' : 'none';
   showErr('muErr','');
@@ -167,36 +188,37 @@ async function loadClients(page=1) {
     const list = j?.data?.data ?? j?.data ?? [];
     $('tbClients').innerHTML = list.length ? list.map(c => `
       <tr>
-        <td class="tc">${esc(c.client_code||'—')}</td>
         <td>${esc(c.client_name)}</td>
         <td class="tm">${esc(c.contact_person||'—')}</td>
-        <td class="tm">${esc(c.phone||'—')}</td>
         <td>${c.inspection_requests_count ?? 0}</td>
         <td><div class="tbl-actions">
           <button class="btn-edit" onclick="openClientModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">Edit</button>
           <button class="btn-del" onclick="confirmDelete('client',${c.id},'${esc(c.client_name)}')">Hapus</button>
         </div></td>
-      </tr>`).join('') : `<tr><td colspan="6" class="state-box"><div class="si">🏢</div><h3>Tidak ada client</h3></td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="4" class="state-box"><div class="si">🏢</div><h3>Tidak ada customer</h3></td></tr>`;
     $('pgClients').innerHTML = pagerHtml(j?.data, 'loadClients');
   } catch(_) {}
 }
 
 function openClientModal(c=null) {
   editClientId = c?.id ?? null;
-  $('mcTitle').textContent  = c ? 'Edit Client' : 'Tambah Client';
+  $('mcTitle').textContent  = c ? 'Edit Customer' : 'Tambah Customer';
   $('mcName').value         = c?.client_name    ?? '';
   $('mcCompany').value      = c?.company        ?? '';
   $('mcContact').value      = c?.contact_person ?? '';
-  $('mcPhone').value        = c?.phone          ?? '';
   $('mcAddress').value      = c?.address        ?? '';
   showErr('mcErr','');
   showModal('modalClient');
 }
 
 async function saveClient() {
-  const body = { client_name: val('mcName'), company: val('mcCompany'),
-    contact_person: val('mcContact'), phone: val('mcPhone'), address: val('mcAddress')||null };
-  if (!body.client_name) { showErr('mcErr','Nama client wajib diisi.'); return; }
+  const body = { 
+    client_name: val('mcName'), 
+    company: val('mcCompany'),
+    contact_person: val('mcContact'), 
+    address: val('mcAddress')||null 
+  };
+  if (!body.client_name) { showErr('mcErr','Nama customer wajib diisi.'); return; }
   if (!body.company)     { showErr('mcErr','Nama perusahaan wajib diisi.'); return; }
   setBtn('mcSave', true);
   try {
@@ -205,7 +227,7 @@ async function saveClient() {
     const res = await fetch(url, {method, headers:auth(), body: JSON.stringify(body)});
     const j   = await res.json();
     if (!res.ok) { showErr('mcErr', j?.message || 'Gagal menyimpan.'); return; }
-    closeModal('modalClient'); toast(editClientId ? 'Client diperbarui.' : 'Client ditambahkan.', 'ok');
+    closeModal('modalClient'); toast(editClientId ? 'Customer diperbarui.' : 'Customer ditambahkan.', 'ok');
     loadClients(); loadStats();
   } catch(_) { showErr('mcErr','Terjadi kesalahan.'); }
   finally { setBtn('mcSave', false); }
@@ -214,7 +236,7 @@ async function saveClient() {
 // ── Machines ─────────────────────────────────────────────────
 let editMachineId = null;
 async function loadMachines(page=1) {
-  $('tbMachines').innerHTML = skRows(4);
+  $('tbMachines').innerHTML = skRows(2);
   const url = `${BASE}/admin/machines?page=${page}&search=${encodeURIComponent(val('searchMachines'))}`;
   try {
     const res = await fetch(url, {headers:auth()});
@@ -223,13 +245,11 @@ async function loadMachines(page=1) {
     $('tbMachines').innerHTML = list.length ? list.map(m => `
       <tr>
         <td class="tc">${esc(m.machine_name)}</td>
-        <td class="tm">${esc(m.machine_type||'—')}</td>
-        <td class="tm">${esc(m.location||'—')}</td>
         <td><div class="tbl-actions">
           <button class="btn-edit" onclick="openMachineModal(${JSON.stringify(m).replace(/"/g,'&quot;')})">Edit</button>
           <button class="btn-del" onclick="confirmDelete('machine',${m.id},'${esc(m.machine_name)}')">Hapus</button>
         </div></td>
-      </tr>`).join('') : `<tr><td colspan="4" class="state-box"><div class="si">🏭</div><h3>Tidak ada mesin</h3></td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="2" class="state-box"><div class="si">🏭</div><h3>Tidak ada mesin</h3></td></tr>`;
     $('pgMachines').innerHTML = pagerHtml(j?.data, 'loadMachines');
   } catch(_) {}
 }
@@ -238,14 +258,12 @@ function openMachineModal(m=null) {
   editMachineId = m?.id ?? null;
   $('mmTitle').textContent = m ? 'Edit Mesin' : 'Tambah Mesin';
   $('mmName').value = m?.machine_name ?? '';
-  $('mmType').value = m?.machine_type ?? '';
-  $('mmLoc').value  = m?.location     ?? '';
   showErr('mmErr','');
   showModal('modalMachine');
 }
 
 async function saveMachine() {
-  const body = { machine_name: val('mmName'), machine_type: val('mmType'), location: val('mmLoc')||null };
+  const body = { machine_name: val('mmName') };
   if (!body.machine_name) { showErr('mmErr','Nama mesin wajib diisi.'); return; }
   setBtn('mmSave', true);
   try {
@@ -261,8 +279,9 @@ async function saveMachine() {
 }
 
 // ── Inspection Requests ──────────────────────────────────────
+let editRequestId = null;
 async function loadRequests(page=1) {
-  $('tbRequests').innerHTML = skRows(6);
+  $('tbRequests').innerHTML = skRows(5);
   const url = `${BASE}/admin/inspection-requests?page=${page}&search=${encodeURIComponent(val('searchReq'))}&status=${val('filterReqStatus')}`;
   try {
     const res = await fetch(url, {headers:auth()});
@@ -270,54 +289,96 @@ async function loadRequests(page=1) {
     const list = j?.data?.data ?? j?.data ?? [];
     $('tbRequests').innerHTML = list.length ? list.map(r => `
       <tr>
-        <td class="tc" style="font-family:monospace">${esc(r.request_code)}</td>
+        <td class="tc" style="font-family:monospace">${esc(r.opk||'—')}</td>
         <td>${esc(r.client?.client_name||'—')}</td>
+        <td>${esc(r.yarn_type?.yarn_name||'—')}</td>
+        <td>${esc(r.setting?.setting_name||'—')}</td>
+        <td class="tc" style="font-weight:600">${esc(r.gramasi||'—')}</td>
         <td>${pillHtml(r.status?.value ?? r.status)}</td>
         <td style="text-align:center">${r.fabric_rolls_count ?? '—'}</td>
-        <td class="tm">${esc(r.qc?.name||'—')}</td>
         <td class="tm">${r.request_date ? new Date(r.request_date).toLocaleDateString('id-ID') : '—'}</td>
-      </tr>`).join('') : `<tr><td colspan="6" class="state-box"><div class="si">📋</div><h3>Belum ada request</h3><p>Klik "+ Buat Request" untuk memulai</p></td></tr>`;
+        <td>
+          <button class="btn-edit" onclick="openRequestModal(${JSON.stringify(r).replace(/"/g,'&quot;')})">Edit</button>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="9" class="state-box"><div class="si">📋</div><h3>Belum ada order</h3><p>Klik "+ Buat Order" untuk memulai</p></td></tr>`;
     $('pgRequests').innerHTML = pagerHtml(j?.data, 'loadRequests');
   } catch(_) {}
 }
 
-async function openRequestModal() {
+async function openRequestModal(r=null) {
+  editRequestId = r?.id ?? null;
   showErr('mrErr','');
+  $('mrTitle').textContent = r ? 'Edit Order' : 'Buat Order';
+  $('mrSave').textContent = r ? 'Simpan Perubahan' : 'Buat Order';
+
+  if (r) {
+    $('mrTotalRow').style.display = 'none';
+  } else {
+    $('mrTotalRow').style.display = '';
+  }
+
   $('mrClient').innerHTML  = '<option value="">Memuat…</option>';
-  $('mrQC').innerHTML      = '<option value="">Memuat…</option>';
-  $('mrMachine').innerHTML = '<option value="">Memuat…</option>';
-  $('mrTotal').value = ''; $('mrLength').value = ''; $('mrBatch').value = ''; $('mrNotes').value = '';
+  $('mrYarnType').innerHTML = '<option value="">Memuat…</option>';
+  $('mrSetting').innerHTML = '<option value="">Memuat…</option>';
+  $('mrGramasi').innerHTML = '<option value="">Memuat…</option>';
+  $('mrTotal').value = '';
+  $('mrOpk').value = r?.opk ?? '';
+  $('mrNotes').value = r?.notes ?? '';
   showModal('modalRequest');
+
   try {
-    const [clients, users, machines] = await Promise.all([
+    const [clients, yarns, settings, gramasis] = await Promise.all([
       fetch(`${BASE}/admin/clients?per_page=100`, {headers:auth()}).then(r=>r.json()),
-      fetch(`${BASE}/admin/users?role=qc&per_page=100`, {headers:auth()}).then(r=>r.json()),
-      fetch(`${BASE}/admin/machines?per_page=100`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/yarn-types`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/settings`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/gramasis`, {headers:auth()}).then(r=>r.json())
     ]);
     const cl = clients?.data?.data ?? clients?.data ?? [];
-    const us = users?.data?.data   ?? users?.data   ?? [];
-    const mc = machines?.data?.data?? machines?.data ?? [];
-    $('mrClient').innerHTML  = `<option value="">— Pilih Client —</option>` + cl.map(c=>`<option value="${c.id}">${esc(c.client_name)}</option>`).join('');
-    $('mrQC').innerHTML      = `<option value="">— Opsional —</option>` + us.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
-    $('mrMachine').innerHTML = `<option value="">— Opsional —</option>` + mc.map(m=>`<option value="${m.id}">${esc(m.machine_name)}</option>`).join('');
+    $('mrClient').innerHTML  = `<option value="">— Pilih Customer —</option>` + cl.map(c=>`<option value="${c.id}">${esc(c.client_name)}</option>`).join('');
+    if (r?.client_id) $('mrClient').value = r.client_id;
+    
+    const yl = yarns?.data ?? yarns ?? [];
+    $('mrYarnType').innerHTML = `<option value="">— Pilih Jenis Benang —</option>` + yl.map(y=>`<option value="${y.id}">${esc(y.yarn_name)}</option>`).join('');
+    if (r?.yarn_type_id) $('mrYarnType').value = r.yarn_type_id;
+
+    const sl = settings?.data ?? settings ?? [];
+    $('mrSetting').innerHTML = `<option value="">— Pilih Setting —</option>` + sl.map(s=>`<option value="${s.id}">${esc(s.setting_name)}</option>`).join('');
+    if (r?.setting_id) $('mrSetting').value = r.setting_id;
+
+    const gl = gramasis?.data ?? gramasis ?? [];
+    $('mrGramasi').innerHTML = `<option value="">— Pilih Gramasi —</option>` + gl.map(g=>`<option value="${esc(g.range)}">${esc(g.range)}</option>`).join('');
+    if (r?.gramasi) $('mrGramasi').value = r.gramasi;
   } catch(_) { showErr('mrErr','Gagal memuat dropdown data.'); }
 }
 
 async function saveRequest() {
-  const clientId = val('mrClient'), total = parseInt(val('mrTotal')), length = parseFloat(val('mrLength'));
-  if (!clientId) { showErr('mrErr','Pilih client terlebih dahulu.'); return; }
-  if (!total || total < 1) { showErr('mrErr','Jumlah roll minimal 1.'); return; }
-  if (!length || length < 0.1) { showErr('mrErr','Panjang roll wajib diisi.'); return; }
-  const body = { client_id: clientId, total_roll: total, length_meter: length,
-    qc_id: val('mrQC')||null, machine_id: val('mrMachine')||null,
-    batch_number: val('mrBatch')||null, notes: val('mrNotes')||null };
+  const clientId = val('mrClient'), total = parseInt(val('mrTotal'), 10), opk = val('mrOpk'), yarnTypeId = val('mrYarnType'), settingId = val('mrSetting'), gramasi = val('mrGramasi');
+  if (!clientId) { showErr('mrErr','Pilih customer terlebih dahulu.'); return; }
+  if (!opk) { showErr('mrErr','OPK wajib diisi.'); return; }
+  if (!editRequestId && (!total || total < 1)) { showErr('mrErr','Jumlah roll minimal 1.'); return; }
+
+  const body = { 
+    client_id: clientId, 
+    yarn_type_id: yarnTypeId || null,
+    setting_id: settingId || null,
+    gramasi: gramasi || null,
+    opk, 
+    notes: val('mrNotes')||null 
+  };
+  
+  if (!editRequestId) {
+    body.total_roll = total;
+  }
+
   setBtn('mrSave', true);
   try {
-    const res = await fetch(`${BASE}/admin/inspection-requests`, {method:'POST', headers:auth(), body:JSON.stringify(body)});
+    const url = editRequestId ? `${BASE}/admin/inspection-requests/${editRequestId}` : `${BASE}/admin/inspection-requests`;
+    const method = editRequestId ? 'PUT' : 'POST';
+    const res = await fetch(url, {method, headers:auth(), body:JSON.stringify(body)});
     const j   = await res.json();
-    if (!res.ok) { showErr('mrErr', j?.message || 'Gagal membuat request.'); return; }
+    if (!res.ok) { showErr('mrErr', j?.message || 'Gagal menyimpan order.'); return; }
     closeModal('modalRequest');
-    toast(`Request ${j?.data?.request_code} dibuat dengan ${total} roll!`, 'ok', 4000);
+    toast(editRequestId ? 'Order diperbarui!' : `Order ${j?.data?.request_code} dibuat dengan ${total} roll!`, 'ok', 4000);
     loadRequests(); loadStats();
   } catch(_) { showErr('mrErr','Terjadi kesalahan server.'); }
   finally { setBtn('mrSave', false); }
@@ -326,24 +387,25 @@ async function saveRequest() {
 // ── Fabric Rolls ─────────────────────────────────────────────
 async function loadRolls(page=1) {
   $('tbRolls').innerHTML = skRows(8);
-  const url = `${BASE}/admin/fabric-rolls?page=${page}&search=${encodeURIComponent(val('searchRolls'))}&status=${val('filterRollStatus')}`;
+  const url = `${BASE}/admin/fabric-rolls?page=${page}&search=${encodeURIComponent(val('searchRolls'))}&opk=${encodeURIComponent(val('searchRollsOpk')||'')}&status=${val('filterRollStatus')}`;
   try {
     const res = await fetch(url, {headers:auth()});
     const j = await res.json();
     const list = j?.data?.data ?? j?.data ?? [];
     $('tbRolls').innerHTML = list.length ? list.map(r => {
-      const insp = r.inspection;
-      const result = insp?.result;
-      const resBadge = result === 'PASS' ? `<span class="res-pass">✓ PASS</span>` : result === 'FAIL' ? `<span class="res-fail">✗ FAIL</span>` : `<span style="color:var(--muted)">—</span>`;
+      const insp = r.display_inspection ?? r.latest_inspection ?? r.inspection;
+      const detailBtn = insp?.id
+        ? `<button class="btn-edit" onclick="location.href='qc-detail.html?id=${insp.id}'">Detail</button>`
+        : '—';
       return `<tr>
         <td class="tc" style="font-family:monospace">${esc(r.roll_code)}</td>
-        <td class="tm">${esc(r.inspection_request?.request_code||'—')}</td>
+        <td class="tm">${esc(r.inspection_request?.opk||'—')}</td>
         <td class="tm">${esc(r.inspection_request?.client?.client_name||'—')}</td>
         <td class="tm">${esc(r.machine?.machine_name||'—')}</td>
         <td>${pillHtml(r.status)}</td>
         <td class="tm">${esc(insp?.operator?.name||'—')}</td>
         <td style="text-align:center;font-weight:700">${insp?.score != null ? insp.score : '—'}</td>
-        <td>${resBadge}</td>
+        <td>${detailBtn}</td>
       </tr>`;
     }).join('') : `<tr><td colspan="8" class="state-box"><div class="si">🧵</div><h3>Tidak ada roll</h3></td></tr>`;
     $('pgRolls').innerHTML = pagerHtml(j?.data, 'loadRolls');
@@ -397,9 +459,235 @@ async function saveDefect() {
   finally { setBtn('mdSave', false); }
 }
 
+// ── Yarn Types ───────────────────────────────────────────────
+let editYarnId = null;
+let allYarns   = [];
+
+async function loadYarns() {
+  $('tbYarns').innerHTML = skRows(2);
+  try {
+    const res = await fetch(`${BASE}/admin/yarn-types`, {headers:auth()});
+    const j   = await res.json();
+    allYarns = j?.data ?? [];
+    renderYarns();
+  } catch(_) {
+    $('tbYarns').innerHTML = `<tr><td colspan="2" style="text-align:center;color:var(--danger);padding:2rem">Gagal memuat data</td></tr>`;
+  }
+}
+
+function renderYarns() {
+  const q = val('searchYarns').toLowerCase();
+  const list = q ? allYarns.filter(y =>
+    y.yarn_name?.toLowerCase().includes(q)
+  ) : allYarns;
+
+  $('tbYarns').innerHTML = list.length ? list.map(y => `
+    <tr>
+      <td style="font-weight:600">${esc(y.yarn_name)}</td>
+      <td><div class="tbl-actions">
+        <button class="btn-edit" onclick="openYarnModal(${JSON.stringify(y).replace(/"/g,'&quot;')})">Edit</button>
+        <button class="btn-del" onclick="confirmDelete('yarn',${y.id},'${esc(y.yarn_name)}')">Hapus</button>
+      </div></td>
+    </tr>`).join('')
+  : `<tr><td colspan="2" class="state-box"><div class="si">🧶</div><h3>Belum ada jenis benang</h3><p>Klik "+ Tambah Jenis Benang" untuk memulai</p></td></tr>`;
+}
+
+function openYarnModal(y=null) {
+  editYarnId = y?.id ?? null;
+  $('myTitle').textContent   = y ? 'Edit Jenis Benang' : 'Tambah Jenis Benang';
+  $('myName').value          = y?.yarn_name    ?? '';
+  showErr('myErr','');
+  $('mySave').dataset.label  = 'Simpan';
+  showModal('modalYarn');
+}
+
+async function saveYarn() {
+  const body = {
+    yarn_name: val('myName'),
+  };
+  if (!body.yarn_name) { showErr('myErr','Nama benang wajib diisi.'); return; }
+  setBtn('mySave', true);
+  try {
+    const url    = editYarnId ? `${BASE}/admin/yarn-types/${editYarnId}` : `${BASE}/admin/yarn-types`;
+    const method = editYarnId ? 'PUT' : 'POST';
+    const res = await fetch(url, {method, headers:auth(), body:JSON.stringify(body)});
+    const j   = await res.json();
+    if (!res.ok) { showErr('myErr', j?.message || 'Gagal menyimpan.'); return; }
+    closeModal('modalYarn');
+    toast(editYarnId ? 'Jenis benang diperbarui.' : 'Jenis benang ditambahkan.', 'ok');
+    loadYarns(); loadStats();
+  } catch(_) { showErr('myErr','Terjadi kesalahan.'); }
+  finally { setBtn('mySave', false); }
+}
+
+// ── Master Settings ──────────────────────────────────────────
+let editSettingId = null;
+let allSettings   = [];
+
+async function loadSettings() {
+  $('tbSettings').innerHTML = skRows(3);
+  try {
+    const res = await fetch(`${BASE}/admin/settings`, {headers:auth()});
+    const j   = await res.json();
+    allSettings = j?.data ?? [];
+    renderSettings();
+  } catch(_) {
+    $('tbSettings').innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--danger);padding:2rem">Gagal memuat data</td></tr>`;
+  }
+}
+
+function renderSettings() {
+  const q = val('searchSettings').toLowerCase();
+  const list = q ? allSettings.filter(s =>
+    (s.setting_name||'').toLowerCase().includes(q) ||
+    (s.description||'').toLowerCase().includes(q)
+  ) : allSettings;
+
+  $('tbSettings').innerHTML = list.length ? list.map(s => `
+    <tr>
+      <td style="font-weight:600">${esc(s.setting_name)}</td>
+      <td>${esc(s.description||'—')}</td>
+      <td><div class="tbl-actions">
+        <button class="btn-edit" onclick="openSettingModal(${JSON.stringify(s).replace(/"/g,'&quot;')})">Edit</button>
+        <button class="btn-del" onclick="confirmDelete('setting',${s.id},'${esc(s.setting_name)}')">Hapus</button>
+      </div></td>
+    </tr>`).join('') : `<tr><td colspan="3" class="state-box"><div class="si">⚙️</div><h3>Tidak ada setting</h3></td></tr>`;
+}
+
+function openSettingModal(s=null) {
+  editSettingId = s?.id ?? null;
+  showErr('msErr', '');
+  $('msTitle').textContent = editSettingId ? 'Edit Setting' : 'Tambah Setting';
+  $('msName').value = s?.setting_name ?? '';
+  $('msDesc').value = s?.description ?? '';
+  showModal('modalSetting');
+}
+
+async function saveSetting() {
+  const body = {
+    setting_name: val('msName'),
+    description:  val('msDesc') || null,
+  };
+  if (!body.setting_name) { showErr('msErr','Nama setting wajib diisi.'); return; }
+  setBtn('msSave', true);
+  try {
+    const url    = editSettingId ? `${BASE}/admin/settings/${editSettingId}` : `${BASE}/admin/settings`;
+    const method = editSettingId ? 'PUT' : 'POST';
+    const res = await fetch(url, {method, headers:auth(), body:JSON.stringify(body)});
+    const j   = await res.json();
+    if (!res.ok) { showErr('msErr', j?.message || 'Gagal menyimpan.'); return; }
+    closeModal('modalSetting');
+    toast(editSettingId ? 'Setting diperbarui.' : 'Setting ditambahkan.', 'ok');
+    loadSettings(); loadStats();
+  } catch(_) { showErr('msErr','Terjadi kesalahan.'); }
+  finally { setBtn('msSave', false); }
+}
+
+// ── Master Gramasi ───────────────────────────────────────────
+let editGramasiId = null;
+let allGramasis   = [];
+
+async function loadGramasis() {
+  $('tbGramasis').innerHTML = skRows(3);
+  try {
+    const res = await fetch(`${BASE}/admin/gramasis`, {headers:auth()});
+    const j   = await res.json();
+    allGramasis = j?.data ?? [];
+    renderGramasis();
+  } catch(_) {
+    $('tbGramasis').innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--danger);padding:2rem">Gagal memuat data</td></tr>`;
+  }
+}
+
+function renderGramasis() {
+  const q = val('searchGramasis').toLowerCase();
+  const list = q ? allGramasis.filter(g =>
+    (g.range||'').toLowerCase().includes(q) ||
+    (g.description||'').toLowerCase().includes(q)
+  ) : allGramasis;
+
+  $('tbGramasis').innerHTML = list.length ? list.map(g => `
+    <tr>
+      <td style="font-weight:600">${esc(g.range)}</td>
+      <td>${esc(g.description||'—')}</td>
+      <td><div class="tbl-actions">
+        <button class="btn-edit" onclick="openGramasiModal(${JSON.stringify(g).replace(/"/g,'&quot;')})">Edit</button>
+        <button class="btn-del" onclick="confirmDelete('gramasi',${g.id},'${esc(g.range)}')">Hapus</button>
+      </div></td>
+    </tr>`).join('') : `<tr><td colspan="3" class="state-box"><div class="si">⚖️</div><h3>Tidak ada range gramasi</h3></td></tr>`;
+}
+
+function openGramasiModal(g=null) {
+  editGramasiId = g?.id ?? null;
+  showErr('mgErr', '');
+  $('mgTitle').textContent = editGramasiId ? 'Edit Gramasi' : 'Tambah Gramasi';
+  $('mgRange').value = g?.range ?? '';
+  $('mgDesc').value = g?.description ?? '';
+  showModal('modalGramasi');
+}
+
+async function saveGramasi() {
+  const body = {
+    range: val('mgRange').replace(/\s+/g, ''),
+    description:  val('mgDesc') || null,
+  };
+  if (!body.range) { showErr('mgErr','Range gramasi wajib diisi.'); return; }
+  const regex = /^\d+(\.\d{1,2})?-\d+(\.\d{1,2})?$/;
+  if (!regex.test(body.range)) { showErr('mgErr','Format harus min-maks (contoh: 140-145).'); return; }
+  
+  setBtn('mgSave', true);
+  try {
+    const url    = editGramasiId ? `${BASE}/admin/gramasis/${editGramasiId}` : `${BASE}/admin/gramasis`;
+    const method = editGramasiId ? 'PUT' : 'POST';
+    const res = await fetch(url, {method, headers:auth(), body:JSON.stringify(body)});
+    const j   = await res.json();
+    if (!res.ok) { showErr('mgErr', j?.message || 'Gagal menyimpan.'); return; }
+    closeModal('modalGramasi');
+    toast(editGramasiId ? 'Gramasi diperbarui.' : 'Gramasi ditambahkan.', 'ok');
+    loadGramasis(); loadStats();
+  } catch(_) { showErr('mgErr','Terjadi kesalahan.'); }
+  finally { setBtn('mgSave', false); }
+}
+
+// ── Reassign operator ────────────────────────────────────────
+let reassignRollId = null;
+
+async function openReassignModal(rollId, rollCode) {
+  reassignRollId = rollId;
+  showErr('reassignErr', '');
+  $('reassignRollLabel').textContent = `Roll: ${rollCode}`;
+  $('reassignOperator').innerHTML = '<option value="">Memuat…</option>';
+  showModal('modalReassign');
+  try {
+    const res = await fetch(`${BASE}/admin/users?role=qc&status=active&per_page=100`, {headers:auth()});
+    const j = await res.json();
+    const ops = j?.data?.data ?? j?.data ?? [];
+    $('reassignOperator').innerHTML = '<option value="">— Pilih Operator —</option>' +
+      ops.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  } catch(_) { showErr('reassignErr', 'Gagal memuat daftar operator.'); }
+}
+
+async function saveReassign() {
+  const operatorId = val('reassignOperator');
+  if (!operatorId) { showErr('reassignErr', 'Pilih operator.'); return; }
+  if (!reassignRollId) return;
+  setBtn('reassignSave', true);
+  try {
+    const res = await fetch(`${BASE}/admin/fabric-rolls/${reassignRollId}/reassign`, {
+      method: 'PATCH', headers: auth(), body: JSON.stringify({ operator_id: parseInt(operatorId, 10) }),
+    });
+    const j = await res.json();
+    if (!res.ok) { showErr('reassignErr', j?.message || 'Gagal mengubah operator.'); return; }
+    closeModal('modalReassign');
+    toast('Operator roll diperbarui.', 'ok');
+    loadRolls();
+  } catch(_) { showErr('reassignErr', 'Terjadi kesalahan server.'); }
+  finally { setBtn('reassignSave', false); }
+}
+
 // ── Confirm Delete ───────────────────────────────────────────
-const endpointMap = { user:'admin/users', client:'admin/clients', machine:'admin/machines', defect:'admin/defect-types' };
-const reloadMap   = { user: loadUsers, client: loadClients, machine: loadMachines, defect: loadDefects };
+const endpointMap = { user:'admin/users', client:'admin/clients', machine:'admin/machines', defect:'admin/defect-types', yarn:'admin/yarn-types', setting:'admin/settings', gramasi:'admin/gramasis' };
+const reloadMap   = { user: loadUsers, client: loadClients, machine: loadMachines, defect: loadDefects, yarn: loadYarns, setting: loadSettings, gramasi: loadGramasis };
 
 function confirmDelete(type, id, name) {
   $('confirmMsg').textContent = `Yakin ingin menghapus "${name}"? Tindakan ini tidak dapat dibatalkan.`;
@@ -423,6 +711,94 @@ $('logoutBtn').addEventListener('click', async () => {
   localStorage.clear(); location.replace('index.html');
 });
 
+// ── Quick Release ───────────────────────────────────────────
+async function quickRelease(inspectionId) {
+  if (confirm('Apakah Anda yakin roll ini sudah terkirim / rilis ke customer?')) {
+    try {
+      const res = await fetch(`${BASE}/admin/inspections/${inspectionId}/release`, {
+        method: 'POST',
+        headers: auth()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.message || 'Gagal merilis hasil inspeksi.', 'err');
+        return;
+      }
+      toast('Roll berhasil dirilis ke customer!', 'ok');
+      loadFinalData();
+      loadStats();
+    } catch (_) {
+      toast('Network error. Periksa koneksi Anda.', 'err');
+    }
+  }
+}
+
+// ── Final Data (Validasi & Rilis) ──────────────────────────
+async function loadFinalData() {
+  $('tbPendingRelease').innerHTML = skRows(8);
+  $('tbReleased').innerHTML = skRows(9);
+
+  try {
+    const [pendingRes, releasedRes] = await Promise.all([
+      fetch(`${BASE}/admin/inspections/pending-release`, {headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/admin/inspections/released`, {headers:auth()}).then(r=>r.json())
+    ]);
+
+    const pendingList = pendingRes?.data?.data ?? pendingRes?.data ?? [];
+    $('tbPendingRelease').innerHTML = pendingList.length ? pendingList.map(i => {
+      const req = i.roll?.inspection_request ?? i.roll?.request ?? {};
+      return `<tr>
+        <td class="tc" style="font-family:monospace">${esc(i.roll?.roll_code)}</td>
+        <td class="tm" style="font-weight:700">${i.manual_roll_number ?? '—'}</td>
+        <td>${esc(req.client?.client_name||'—')}</td>
+        <td>${esc(req.opk||'—')}</td>
+        <td style="font-weight:700;color:var(--accent)">Grade ${esc(i.result)}</td>
+        <td class="tm">${esc(i.operator?.name||'—')}</td>
+        <td class="tm">${new Date(i.created_at).toLocaleDateString('id-ID')}</td>
+        <td>
+          <div class="tbl-actions">
+            <button class="btn-val" onclick="quickRelease(${i.id})">✓ Sudah Kirim</button>
+            <button class="btn-edit" onclick="location.href='qc-detail.html?id=${i.id}'">🔍 Review</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="8" class="state-box"><div class="si">⏳</div><h3>Tidak ada antrean rilis</h3></td></tr>`;
+
+    const releasedList = releasedRes?.data?.data ?? releasedRes?.data ?? [];
+    $('tbReleased').innerHTML = releasedList.length ? releasedList.map(i => {
+      const req = i.roll?.inspection_request ?? i.roll?.request ?? {};
+      return `<tr>
+        <td class="tc" style="font-family:monospace">${esc(i.roll?.roll_code)}</td>
+        <td class="tm" style="font-weight:700">${i.manual_roll_number ?? '—'}</td>
+        <td>${esc(req.client?.client_name||'—')}</td>
+        <td>${esc(req.opk||'—')}</td>
+        <td style="font-weight:700;color:var(--success)">Grade ${esc(i.result)}</td>
+        <td class="tm">${esc(i.operator?.name||'—')}</td>
+        <td class="tm">${esc(i.validator?.name||'—')}</td>
+        <td class="tm">${new Date(i.updated_at).toLocaleDateString('id-ID')}</td>
+        <td>
+          <button class="btn-edit" onclick="location.href='qc-detail.html?id=${i.id}'">Detail</button>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="9" class="state-box"><div class="si">✅</div><h3>Belum ada data rilis</h3></td></tr>`;
+
+  } catch(_) {
+    $('tbPendingRelease').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Gagal memuat data</td></tr>';
+    $('tbReleased').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger)">Gagal memuat data</td></tr>';
+  }
+}
+
 // ── Init ─────────────────────────────────────────────────────
 loadStats();
-loadUsers();
+const hash = window.location.hash.replace('#', '');
+if (hash && tabLoaders[hash]) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${hash}"]`);
+  if (btn) btn.classList.add('active');
+  const panel = $(`tab-${hash}`);
+  if (panel) panel.classList.add('active');
+  tabLoaders[hash]();
+} else {
+  loadUsers();
+}

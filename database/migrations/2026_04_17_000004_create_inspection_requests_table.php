@@ -11,8 +11,9 @@ return new class extends Migration
         Schema::create('inspection_requests', function (Blueprint $table) {
             $table->id();
             $table->string('request_code')->unique();
+            $table->string('opk');
             $table->foreignId('client_id')->constrained('clients')->restrictOnDelete();
-            $table->foreignId('qc_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('qc_id')->nullable()->constrained('users')->nullOnDelete();
             $table->date('request_date');
             $table->text('notes')->nullable();
             $table->enum('status', ['NEW', 'IN_PROGRESS', 'COMPLETED'])->default('NEW');

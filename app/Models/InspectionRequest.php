@@ -13,7 +13,11 @@ class InspectionRequest extends Model
 
     protected $fillable = [
         'client_id',
+        'yarn_type_id',
+        'setting_id',
+        'gramasi',
         'request_code',
+        'opk',
         'notes',
         'qc_id',
         'status',
@@ -57,6 +61,16 @@ class InspectionRequest extends Model
     // Relationships
     // -----------------------------------------------------------------------
 
+    public function yarnType()
+    {
+        return $this->belongsTo(YarnType::class);
+    }
+
+    public function setting()
+    {
+        return $this->belongsTo(Setting::class);
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -79,7 +93,7 @@ class InspectionRequest extends Model
     /** Auto-generate request_code. */
     public static function generateCode(): string
     {
-        $count = self::withTrashed()->count() + 1;
+        $count = self::count() + 1;
         return 'REQ-' . now()->format('Ymd') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 }

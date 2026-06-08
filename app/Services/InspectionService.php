@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Log;
 class InspectionService
 {
     public function __construct(
-        protected AuditService        $audit,
-        protected StateMachineService $sm,
+        protected AuditService              $audit,
+        protected StateMachineService       $sm,
+        protected InspectionScoringService  $scoring,
     ) {}
 
     // -----------------------------------------------------------------------
@@ -35,35 +36,89 @@ class InspectionService
      *
      * @throws DomainException on invalid state transition
      */
-    public function startInspection(FabricRoll $roll, int $operatorId): Inspection
+    /**
+     * @param  array{shift:string,length_meter:float|int|string,weight_kg:float|int|string,gramasi:float|int|string,yarn_name:string}  $measurements
+     */
+    public function startInspection(FabricRoll $roll, int $operatorId, array $measurements): Inspection
     {
-        return DB::transaction(function () use ($roll, $operatorId) {
+        return DB::transaction(function () use ($roll, $operatorId, $measurements) {
             // Lock roll row — prevent concurrent starts on the same roll
             $lockedRoll = FabricRoll::lockForUpdate()->findOrFail($roll->id);
+
+
+
+            if (Inspection::where('operator_id', $operatorId)
+                ->where('status', InspectionStatus::IN_PROGRESS->value)
+                ->exists()) {
+                throw new DomainException('Selesaikan inspeksi yang sedang berjalan terlebih dahulu.');
+            }
 
             // Validate roll transition: NEW|PENDING → IN_PROGRESS
             $this->sm->assertRollTransition($lockedRoll->status, FabricRollStatus::IN_PROGRESS->value);
 
-            $lockedRoll->update(['status' => FabricRollStatus::IN_PROGRESS->value]);
-
-            // Sync InspectionRequest: NEW → IN_PROGRESS (only on first activation)
-            $request = $lockedRoll->inspectionRequest;
-            if ($request && $request->status === InspectionRequestStatus::NEW) {
-                $this->sm->assertRequestTransition($request->status, InspectionRequestStatus::IN_PROGRESS->value);
-                $request->update(['status' => InspectionRequestStatus::IN_PROGRESS->value]);
-
-                Log::info('InspectionRequest activated', [
-                    'request_id' => $request->id,
-                    'from'       => InspectionRequestStatus::NEW->value,
-                    'to'         => InspectionRequestStatus::IN_PROGRESS->value,
+            // Resolve Machine dynamically (if provided)
+            $machine = null;
+            if (!empty($measurements['machine_name'])) {
+                $machine = \App\Models\Machine::firstOrCreate([
+                    'machine_name' => trim($measurements['machine_name']),
                 ]);
             }
 
+            // Resolve QC User dynamically
+            $qcName = trim($measurements['qc_name']);
+            $email = strtolower(str_replace(' ', '', $qcName)) . '@duniatex.com';
+            $qc = \App\Models\User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name'     => $qcName,
+                    'role'     => 'qc',
+                    'password' => bcrypt('password123'),
+                    'status'   => 'active',
+                ]
+            );
+
+            // Update Roll details: Machine, Lot (batch_number) & Assign operator
+            $lockedRoll->update([
+                'status'       => FabricRollStatus::IN_PROGRESS->value,
+                'batch_number' => isset($measurements['batch_number']) && $measurements['batch_number'] !== null ? trim($measurements['batch_number']) : $lockedRoll->batch_number,
+                'machine_id'   => $machine?->id,
+                'operator_id'  => $operatorId,
+            ]);
+
+            // Sync InspectionRequest: NEW → IN_PROGRESS (only on first activation)
+            $request = $lockedRoll->inspectionRequest;
+            if ($request) {
+                // Update QC user for the request
+                $request->update(['qc_id' => $qc->id]);
+
+                if ($request->status === InspectionRequestStatus::NEW) {
+                    $this->sm->assertRequestTransition($request->status, InspectionRequestStatus::IN_PROGRESS->value);
+                    $request->update(['status' => InspectionRequestStatus::IN_PROGRESS->value]);
+
+                    Log::info('InspectionRequest activated', [
+                        'request_id' => $request->id,
+                        'from'       => InspectionRequestStatus::NEW->value,
+                        'to'         => InspectionRequestStatus::IN_PROGRESS->value,
+                    ]);
+                }
+            }
+
+            $yarnName = trim($measurements['yarn_name'] ?? '');
+            if (empty($yarnName) && $lockedRoll->inspectionRequest?->yarnType) {
+                $yarnName = $lockedRoll->inspectionRequest->yarnType->yarn_name;
+            }
+
             $inspection = Inspection::create([
-                'roll_id'     => $lockedRoll->id,
-                'operator_id' => $operatorId,
-                'start_time'  => now(),
-                'status'      => InspectionStatus::IN_PROGRESS->value,
+                'roll_id'      => $lockedRoll->id,
+                'operator_id'  => $operatorId,
+                'shift'        => $measurements['shift'],
+                'length_meter' => null, // now nullable/filled later!
+                'weight_kg'    => $measurements['weight_kg'] ?? null,
+                'gramasi'      => null, // now nullable/filled later!
+                'lebar'        => null, // now nullable/filled later!
+                'yarn_name'    => $yarnName,
+                'start_time'   => now(),
+                'status'       => InspectionStatus::IN_PROGRESS->value,
             ]);
 
             Log::info('Inspection started', [
@@ -125,54 +180,134 @@ class InspectionService
     // -----------------------------------------------------------------------
 
     /**
-     * Finish an active inspection: calculate total_points, score, and result.
+     * Finish an active inspection: calculate total_points, score, and grade.
      * Locks the inspection row to prevent concurrent finishes (double-click protection).
      *
-     * Score formula (4-Point System, per 100 m):
-     *   score  = (total_points / length_meter) × 100
-     *   result = score ≤ 24 → PASS, else FAIL
+     * Score formula:
+     *   score = total_points × 1646 ÷ (length_meter × lebar)
+     *   grade: ≤15 → A, >15 & <20 → B, ≥20 → BS
      *
      * @throws DomainException if inspection is not IN_PROGRESS
      */
-    public function finishInspection(Inspection $inspection): Inspection
+    public function finishInspection(Inspection $inspection, array $data = []): Inspection
     {
-        return DB::transaction(function () use ($inspection) {
+        return DB::transaction(function () use ($inspection, $data) {
             // Lock inspection row — prevent race condition on concurrent requests
             $locked = Inspection::lockForUpdate()->findOrFail($inspection->id);
 
-            // Validate transition: IN_PROGRESS → SUBMITTED
-            $this->sm->assertInspectionTransition($locked->status, InspectionStatus::SUBMITTED->value);
+            // Validate transition: IN_PROGRESS → QC_VALIDATED
+            $this->sm->assertInspectionTransition($locked->status, InspectionStatus::QC_VALIDATED->value);
 
-            $totalPoints = $locked->defects()->sum('point');
-            $lengthMeter = $locked->roll->length_meter;
+            // Resolve Machine dynamically
+            $machine = \App\Models\Machine::firstOrCreate([
+                'machine_name' => trim($data['machine_name']),
+            ]);
 
-            $score  = $lengthMeter > 0 ? round(($totalPoints / $lengthMeter) * 100, 2) : 0;
-            $result = $score <= 24 ? 'PASS' : 'FAIL';
+            // Store length_meter, weight_kg & gramasi now on the inspection & the fabric roll
+            $locked->update([
+                'length_meter'       => $data['length_meter'],
+                'gramasi'            => $data['gramasi'],
+                'lebar'              => $data['lebar'] ?? null,
+                'weight_kg'          => $data['weight_kg'],
+                'manual_roll_number' => $data['manual_roll_number'] ?? null,
+                'potongan_1_kg'      => $data['potongan_1_kg'] ?? null,
+                'potongan_2_kg'      => $data['potongan_2_kg'] ?? null,
+                'keterangan_visual'  => $data['keterangan_visual'] ?? null,
+                'catatan'            => $data['catatan'] ?? null,
+            ]);
+            $locked->roll->update([
+                'length_meter' => $data['length_meter'],
+                'machine_id'   => $machine->id,
+                'batch_number' => trim($data['batch_number'] ?? $locked->roll->batch_number),
+            ]);
+
+            $totalPoints = (int) $locked->defects()->sum('point');
+            $lengthMeter = (float) $locked->length_meter;
+            $lebar       = (float) $locked->lebar;
+
+            try {
+                ['score' => $score, 'grade' => $grade] = $this->scoring->calculate(
+                    $totalPoints,
+                    $lengthMeter,
+                    $lebar,
+                );
+            } catch (\InvalidArgumentException $e) {
+                throw new DomainException($e->getMessage());
+            }
+
+            // Override grade if manual result is provided
+            $grade = $data['result'] ?? $grade;
 
             $locked->update([
                 'end_time'     => now(),
                 'total_points' => $totalPoints,
                 'score'        => $score,
-                'result'       => $result,
-                'status'       => InspectionStatus::SUBMITTED->value,
+                'result'       => $grade,
+                'status'       => InspectionStatus::QC_VALIDATED->value,
             ]);
 
-            // Sync roll: IN_PROGRESS → SUBMITTED
-            $this->sm->assertRollTransition($locked->roll->status, FabricRollStatus::SUBMITTED->value);
-            $locked->roll->update(['status' => FabricRollStatus::SUBMITTED->value]);
+            // Sync roll: IN_PROGRESS → QC_VALIDATED
+            $this->sm->assertRollTransition($locked->roll->status, FabricRollStatus::QC_VALIDATED->value);
+            $locked->roll->update(['status' => FabricRollStatus::QC_VALIDATED->value]);
+
+            // Atomic: check if ALL rolls in request are now finished (QC_VALIDATED or RELEASED)
+            $parentRequest = $locked->roll->inspectionRequest;
+            if ($parentRequest && $parentRequest->status !== \App\Enums\InspectionRequestStatus::COMPLETED) {
+                // Check if any rolls are unfinished (i.e. NEW, IN_PROGRESS, or PENDING)
+                $hasUnfinishedRolls = $parentRequest->fabricRolls()
+                    ->whereIn('status', [
+                        FabricRollStatus::NEW->value,
+                        FabricRollStatus::IN_PROGRESS->value,
+                        FabricRollStatus::PENDING->value
+                    ])
+                    ->exists();
+
+                if (! $hasUnfinishedRolls) {
+                    // Auto-heal / advance NEW → IN_PROGRESS if needed
+                    if ($parentRequest->status === \App\Enums\InspectionRequestStatus::NEW) {
+                        $parentRequest->update(['status' => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value]);
+                        $parentRequest->refresh();
+                    }
+
+                    $this->sm->assertRequestTransition(
+                        $parentRequest->status,
+                        \App\Enums\InspectionRequestStatus::COMPLETED->value
+                    );
+                    $parentRequest->update(['status' => \App\Enums\InspectionRequestStatus::COMPLETED->value]);
+
+                    Log::info('InspectionRequest completed automatically on finishInspection', [
+                        'request_id' => $parentRequest->id,
+                        'from'       => $parentRequest->status,
+                        'to'         => \App\Enums\InspectionRequestStatus::COMPLETED->value,
+                    ]);
+
+                    $this->audit->log(
+                        'request_completed',
+                        "Inspection request {$parentRequest->request_code} telah selesai — semua roll telah diselesaikan",
+                        [
+                            'user_id'    => null,
+                            'request_id' => $parentRequest->id,
+                            'metadata'   => [
+                                'from'            => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value,
+                                'to'              => \App\Enums\InspectionRequestStatus::COMPLETED->value,
+                            ],
+                        ]
+                    );
+                }
+            }
 
             Log::info('Inspection submitted', [
                 'inspection_id' => $locked->id,
                 'roll_code'     => $locked->roll->roll_code,
                 'score'         => $score,
-                'result'        => $result,
+                'grade'         => $grade,
                 'from'          => InspectionStatus::IN_PROGRESS->value,
-                'to'            => InspectionStatus::SUBMITTED->value,
+                'to'            => InspectionStatus::QC_VALIDATED->value,
             ]);
 
             $this->audit->log(
                 'inspection_submitted',
-                "Operator menyerahkan hasil inspeksi roll {$locked->roll->roll_code} — skor: {$score}, hasil: {$result}",
+                "QC Inspector menyerahkan hasil inspeksi roll {$locked->roll->roll_code} — skor: {$score}, grade: {$grade}",
                 [
                     'user_id'       => $locked->operator_id,
                     'inspection_id' => $locked->id,
@@ -180,14 +315,20 @@ class InspectionService
                     'request_id'    => $locked->roll->request_id,
                     'metadata'      => [
                         'from'   => InspectionStatus::IN_PROGRESS->value,
-                        'to'     => InspectionStatus::SUBMITTED->value,
+                        'to'     => InspectionStatus::QC_VALIDATED->value,
                         'score'  => $score,
-                        'result' => $result,
+                        'grade'  => $grade,
                     ],
                 ]
             );
 
-            return $locked->fresh(['roll', 'defects']);
+            return $locked->fresh([
+                'roll.machine',
+                'roll.inspectionRequest.client',
+                'roll.inspectionRequest.qc',
+                'roll.inspectionRequest.setting',
+                'defects.defectType',
+            ]);
         });
     }
 
@@ -214,6 +355,7 @@ class InspectionService
             'defect_type_id' => $data['defect_type_id'],
             'position_meter' => $data['position_meter'],
             'point'          => $data['point'],
+            'side'           => $data['side'],
             'notes'          => $data['notes'] ?? null,
         ]);
     }
@@ -360,6 +502,36 @@ class InspectionService
             $lockedRoll->update(['status' => FabricRollStatus::PENDING->value]);
             $locked->setRelation('roll', $lockedRoll);
 
+            // Revert parent request back to IN_PROGRESS if it was COMPLETED
+            $parentRequest = $lockedRoll->inspectionRequest;
+            if ($parentRequest && $parentRequest->status === \App\Enums\InspectionRequestStatus::COMPLETED) {
+                $this->sm->assertRequestTransition(
+                    $parentRequest->status,
+                    \App\Enums\InspectionRequestStatus::IN_PROGRESS->value
+                );
+                $parentRequest->update(['status' => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value]);
+
+                Log::info('InspectionRequest reverted to IN_PROGRESS on rejectInspection', [
+                    'request_id' => $parentRequest->id,
+                    'from'       => \App\Enums\InspectionRequestStatus::COMPLETED->value,
+                    'to'         => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value,
+                ]);
+
+                $this->audit->log(
+                    'request_reopened',
+                    "Inspection request {$parentRequest->request_code} dibuka kembali ke IN_PROGRESS karena roll {$lockedRoll->roll_code} ditolak oleh QC",
+                    [
+                        'user_id'    => $qcUserId,
+                        'request_id' => $parentRequest->id,
+                        'metadata'   => [
+                            'from'    => \App\Enums\InspectionRequestStatus::COMPLETED->value,
+                            'to'      => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value,
+                            'roll_id' => $lockedRoll->id,
+                        ],
+                    ]
+                );
+            }
+
             Log::info('Inspection rejected', [
                 'inspection_id' => $locked->id,
                 'roll_code'     => $locked->roll->roll_code,
@@ -380,6 +552,120 @@ class InspectionService
                     'request_id'    => $locked->roll->request_id,
                     'metadata'      => [
                         'from'   => InspectionStatus::SUBMITTED->value,
+                        'to'     => InspectionStatus::REJECTED->value,
+                        'reason' => $reason,
+                    ],
+                ]
+            );
+
+            return $locked->fresh();
+        });
+    }
+
+    /**
+     * Release an inspection to the customer (Admin action).
+     *
+     * @throws DomainException if not in QC_VALIDATED state
+     */
+    public function releaseInspection(Inspection $inspection, int $adminId): Inspection
+    {
+        return DB::transaction(function () use ($inspection, $adminId) {
+            $locked = Inspection::lockForUpdate()->findOrFail($inspection->id);
+
+            // Validate transition: QC_VALIDATED → RELEASED
+            $this->sm->assertInspectionTransition($locked->status, InspectionStatus::RELEASED->value);
+
+            $locked->update([
+                'status'       => InspectionStatus::RELEASED->value,
+                'validated_by' => $adminId,
+                'validated_at' => now(),
+            ]);
+
+            $lockedRoll = $locked->roll()->lockForUpdate()->first();
+            $this->sm->assertRollTransition($lockedRoll->status, FabricRollStatus::RELEASED->value);
+            $lockedRoll->update(['status' => FabricRollStatus::RELEASED->value]);
+            $locked->setRelation('roll', $lockedRoll);
+
+            // Audit log
+            $this->audit->log(
+                'inspection_released',
+                "Admin merilis hasil inspeksi roll {$lockedRoll->roll_code} ke customer",
+                [
+                    'user_id'       => $adminId,
+                    'inspection_id' => $locked->id,
+                    'roll_id'       => $lockedRoll->id,
+                    'request_id'    => $lockedRoll->request_id,
+                    'metadata'      => [
+                        'from' => InspectionStatus::QC_VALIDATED->value,
+                        'to'   => InspectionStatus::RELEASED->value,
+                    ],
+                ]
+            );
+
+            return $locked->fresh();
+        });
+    }
+
+    /**
+     * Reject an inspection back to QC (Admin action).
+     *
+     * @throws DomainException if not in QC_VALIDATED state
+     */
+    public function rejectInspectionByAdmin(Inspection $inspection, int $adminId, string $reason): Inspection
+    {
+        return DB::transaction(function () use ($inspection, $adminId, $reason) {
+            $locked = Inspection::lockForUpdate()->findOrFail($inspection->id);
+
+            // Validate transition: QC_VALIDATED → REJECTED
+            $this->sm->assertInspectionTransition($locked->status, InspectionStatus::REJECTED->value);
+
+            $locked->update([
+                'status'           => InspectionStatus::REJECTED->value,
+                'validated_by'     => $adminId,
+                'validated_at'     => now(),
+                'rejection_reason' => $reason,
+            ]);
+
+            $lockedRoll = $locked->roll()->lockForUpdate()->first();
+            $this->sm->assertRollTransition($lockedRoll->status, FabricRollStatus::PENDING->value);
+            $lockedRoll->update(['status' => FabricRollStatus::PENDING->value]);
+            $locked->setRelation('roll', $lockedRoll);
+
+            // Revert parent request back to IN_PROGRESS if it was COMPLETED
+            $parentRequest = $lockedRoll->inspectionRequest;
+            if ($parentRequest && $parentRequest->status === \App\Enums\InspectionRequestStatus::COMPLETED) {
+                $this->sm->assertRequestTransition(
+                    $parentRequest->status,
+                    \App\Enums\InspectionRequestStatus::IN_PROGRESS->value
+                );
+                $parentRequest->update(['status' => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value]);
+
+                $this->audit->log(
+                    'request_reopened',
+                    "Inspection request {$parentRequest->request_code} dibuka kembali karena roll {$lockedRoll->roll_code} ditolak oleh Admin",
+                    [
+                        'user_id'    => $adminId,
+                        'request_id' => $parentRequest->id,
+                        'metadata'   => [
+                            'from'    => \App\Enums\InspectionRequestStatus::COMPLETED->value,
+                            'to'      => \App\Enums\InspectionRequestStatus::IN_PROGRESS->value,
+                            'roll_id' => $lockedRoll->id,
+                        ],
+                    ]
+                );
+            }
+
+            // Audit log
+            $this->audit->log(
+                'inspection_rejected_by_admin',
+                "Admin menolak inspeksi roll {$lockedRoll->roll_code} — alasan: {$reason}",
+                [
+                    'user_id'       => $adminId,
+                    'inspection_id' => $locked->id,
+                    'roll_id'       => $lockedRoll->id,
+                    'request_id'    => $lockedRoll->request_id,
+                    'metadata'      => [
+                        'from'   => InspectionStatus::QC_VALIDATED->value,
                         'to'     => InspectionStatus::REJECTED->value,
                         'reason' => $reason,
                     ],

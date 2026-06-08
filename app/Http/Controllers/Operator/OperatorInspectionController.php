@@ -23,7 +23,7 @@ class OperatorInspectionController extends Controller
      */
     public function availableRolls(Request $request): JsonResponse
     {
-        $rolls = FabricRoll::with('machine', 'inspectionRequest.client')
+        $rolls = FabricRoll::with('machine', 'inspectionRequest.client', 'inspectionRequest.qc', 'inspectionRequest.yarnType', 'inspectionRequest.setting', 'assignedOperator')
             ->whereIn('status', [
                 FabricRollStatus::NEW->value,
                 FabricRollStatus::PENDING->value,
@@ -45,7 +45,11 @@ class OperatorInspectionController extends Controller
     public function start(StartInspectionRequest $request, FabricRoll $fabricRoll): JsonResponse
     {
         try {
-            $inspection = $this->inspectionService->startInspection($fabricRoll, $request->user()->id);
+            $inspection = $this->inspectionService->startInspection(
+                $fabricRoll,
+                $request->user()->id,
+                $request->validated()
+            );
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), null, 409);
         }
@@ -74,7 +78,15 @@ class OperatorInspectionController extends Controller
 
         return $this->success(
             'Inspection retrieved.',
-            $inspection->load('roll.machine', 'roll.inspectionRequest.client', 'defects.defectType')
+            $inspection->load([
+                'roll.machine',
+                'roll.inspectionRequest.client',
+                'roll.inspectionRequest.qc',
+                'roll.inspectionRequest.setting',
+                'roll.inspectionRequest.yarnType',
+                'operator',
+                'defects.defectType',
+            ])
         );
     }
 
@@ -85,7 +97,7 @@ class OperatorInspectionController extends Controller
     public function finish(FinishInspectionRequest $request, Inspection $inspection): JsonResponse
     {
         try {
-            $finished = $this->inspectionService->finishInspection($inspection);
+            $finished = $this->inspectionService->finishInspection($inspection, $request->validated());
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), null, 409);
         }

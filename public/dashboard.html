@@ -85,16 +85,145 @@
     }
     .btn-start:active { transform: scale(.98); opacity: .9; }
     .btn-start:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    #modalStart { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(4px); z-index:150; align-items:center; justify-content:center; padding:1rem; }
+    #modalStart.open { display:flex; }
+    .start-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; max-width:420px; width:100%; box-shadow:var(--shadow-md); max-height:90vh; overflow-y:auto; }
+    .start-title { font-size:1rem; font-weight:800; margin-bottom:.25rem; }
+    .start-sub { font-size:.8rem; color:var(--muted); margin-bottom:1rem; }
+    .start-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: 1.2rem; padding: .85rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: left; }
+    .info-item { display: flex; flex-direction: column; }
+    .info-item label { font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0px !important; }
+    .info-item .info-val { font-size: .8rem; font-weight: 700; color: var(--text); margin-top: .15rem; }
+    .info-item .info-val.mono { font-variant-numeric: tabular-nums; font-family: monospace; font-size: .75rem; }
+    .shift-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; margin-bottom:1rem; }
+    .shift-btn { border:2px solid var(--border); background:var(--surface2); border-radius:var(--radius-sm); padding:.65rem .4rem; font-size:.78rem; font-weight:700; cursor:pointer; transition:all .15s; }
+    .shift-btn.active { border-color:var(--accent); background:var(--accent-light); color:var(--accent); }
+    .start-field { margin-bottom:.75rem; }
+    .start-field label { display:block; font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; }
+    .start-field input { width:100%; padding:.65rem .75rem; border:1px solid var(--border); border-radius:var(--radius-sm); font:inherit; }
+    .start-acts { display:flex; gap:.5rem; margin-top:1rem; }
+    .start-acts button { flex:1; padding:.75rem; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; border:none; }
+    .btn-start-cancel { background:var(--surface2); color:var(--text); border:1px solid var(--border)!important; }
+    .btn-start-go { background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; }
     .last-update { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 1.5rem; }
     .btn-refresh.spinning .refresh-icon { animation: spin .6s linear infinite; }
     .refresh-icon { display: inline-block; }
+
+    /* ── Search bar (roll search inside customer) ── */
+    .roll-search-wrap {
+      position: relative; margin-bottom: 1.1rem;
+    }
+    .roll-search-wrap .rs-icon {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      font-size: .9rem; color: var(--muted); pointer-events: none;
+    }
+    #rollSearch {
+      width: 100%; padding: .65rem .75rem .65rem 2.3rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font: .88rem 'Inter', sans-serif; color: var(--text);
+      background: var(--surface); box-shadow: var(--shadow);
+      transition: border-color .2s; box-sizing: border-box;
+    }
+    #rollSearch:focus { outline: none; border-color: var(--accent); }
+    #rollSearch::placeholder { color: var(--muted); }
+
+    /* ── Customer cards (outer view) ── */
+    .customer-grid { display: flex; flex-direction: column; gap: .75rem; }
+    .customer-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.1rem 1.2rem;
+      display: flex; align-items: center; gap: 1rem;
+      cursor: pointer; transition: all .2s;
+      box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .customer-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      opacity: 0; transition: opacity .2s;
+    }
+    .customer-card:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .customer-card:hover::before { opacity: 1; }
+    .cust-avatar {
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: #fff;
+    }
+    .cust-info { flex: 1; min-width: 0; }
+    .cust-name {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cust-sub { font-size: .75rem; color: var(--muted); margin-top: .15rem; }
+    .cust-badge {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: .3rem;
+    }
+    .cust-count {
+      background: var(--accent); color: #fff;
+      border-radius: 20px; font-size: .72rem; font-weight: 700;
+      padding: .2rem .65rem; white-space: nowrap;
+    }
+    .cust-pending-count {
+      background: rgba(239,68,68,.12); color: #ef4444;
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 20px; font-size: .68rem; font-weight: 700;
+      padding: .15rem .55rem; white-space: nowrap;
+    }
+    .cust-arrow { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; transition: transform .2s; }
+    .customer-card:hover .cust-arrow { transform: translateX(3px); color: var(--accent); }
+
+    /* ── Customer search (outer) ── */
+    .cust-search-wrap {
+      position: relative; margin-bottom: 1.1rem;
+    }
+    .cust-search-wrap .cs-icon {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      font-size: .9rem; color: var(--muted); pointer-events: none;
+    }
+    #customerSearch {
+      width: 100%; padding: .65rem .75rem .65rem 2.3rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font: .88rem 'Inter', sans-serif; color: var(--text);
+      background: var(--surface); box-shadow: var(--shadow);
+      transition: border-color .2s; box-sizing: border-box;
+    }
+    #customerSearch:focus { outline: none; border-color: var(--accent); }
+    #customerSearch::placeholder { color: var(--muted); }
+
+    /* ── Inner view (roll list per customer) ── */
+    #innerView { display: none; }
+    #outerView { display: block; }
+    .inner-back-bar {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: 1.1rem;
+    }
+    .btn-back {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: .45rem .85rem;
+      font: .82rem 'Inter', sans-serif; font-weight: 700;
+      color: var(--accent); cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: .35rem;
+    }
+    .btn-back:hover { background: var(--accent-light); border-color: rgba(79,70,229,.3); }
+    .inner-cust-name {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .inner-roll-count {
+      background: var(--accent); color: #fff;
+      border-radius: 20px; font-size: .7rem; font-weight: 700;
+      padding: .2rem .6rem; flex-shrink: 0;
+    }
+
+    /* ── No result ── */
+    .no-result {
+      text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: .9rem;
+    }
+    .no-result-icon { font-size: 2rem; margin-bottom: .5rem; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-left">
-    <div class="logo-mark">🧵</div>
+    <img src="sources/logo-duniatex.jpg" alt="Logo Duniatex" style="width:38px;height:38px;border-radius:10px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 12px var(--accent-glow)"/>
     <div>
       <div class="brand-name">Duniatex <span class="badge-role">Operator</span></div>
       <div class="user-name" id="userName">—</div>
@@ -119,10 +248,10 @@
     </div>
   </div>
 
-  <!-- Roll list section -->
-  <div class="section-bar">
+  <!-- Outer: section bar -->
+  <div class="section-bar" id="outerBar">
     <div style="display:flex;align-items:center;gap:.6rem;">
-      <span class="section-label">Roll Perlu Diinspeksi</span>
+      <span class="section-label">Customer</span>
       <span class="roll-count" id="rollCount" style="display:none"></span>
     </div>
     <button class="btn-refresh" id="refreshBtn">
@@ -130,10 +259,74 @@
     </button>
   </div>
 
-  <div id="rollList"></div>
+  <!-- OUTER VIEW: daftar customer -->
+  <div id="outerView">
+    <div class="cust-search-wrap" id="custSearchWrap" style="display:none">
+      <span class="cs-icon">🔍</span>
+      <input id="customerSearch" type="text" placeholder="Cari nama customer…" autocomplete="off"/>
+    </div>
+    <div id="customerList"></div>
+  </div>
+
+  <!-- INNER VIEW: roll per customer -->
+  <div id="innerView">
+    <div class="inner-back-bar">
+      <button class="btn-back" id="btnBack">← Kembali</button>
+      <div class="inner-cust-name" id="innerCustName"></div>
+      <span class="inner-roll-count" id="innerRollCount"></span>
+    </div>
+    <div class="roll-search-wrap">
+      <span class="rs-icon">🔍</span>
+      <input id="rollSearch" type="text" placeholder="Cari kode roll…" autocomplete="off"/>
+    </div>
+    <div id="rollList"></div>
+  </div>
+
   <div class="last-update" id="lastUpdate" style="display:none"></div>
 
 </main>
+
+<div id="modalStart">
+  <div class="start-box">
+    <div class="start-title" id="startRollTitle">Mulai Inspeksi</div>
+    <div class="start-sub">Isi data kain sebelum mencatat cacat.</div>
+    <div class="start-info-grid">
+      <div class="info-item"><label>OPK</label><span class="info-val" id="mInfoOpk">—</span></div>
+      <div class="info-item"><label>Op. Produksi</label><span class="info-val" id="mInfoOp">—</span></div>
+      <div class="info-item"><label>Nomer Roll</label><span class="info-val mono" id="mInfoRoll">—</span></div>
+      <div class="info-item"><label>Req. Benang</label><span class="info-val" id="mInfoYarn">—</span></div>
+      <div class="info-item"><label>Req. Setting</label><span class="info-val" id="mInfoSetting">—</span></div>
+      <div class="info-item" style="grid-column: span 2;"><label>Catatan Admin</label><span class="info-val" id="mInfoNotes" style="font-weight: 500; font-size: .78rem; white-space: pre-wrap;">—</span></div>
+    </div>
+    <div class="start-field">
+      <label>Shift kerja</label>
+      <div class="shift-row">
+        <button type="button" class="shift-btn" data-shift="pagi">Pagi</button>
+        <button type="button" class="shift-btn" data-shift="siang">Siang</button>
+        <button type="button" class="shift-btn" data-shift="malam">Malam</button>
+      </div>
+    </div>
+    <div class="start-field"><label>Nama QC</label><input id="stQc" type="text" maxlength="100" placeholder="cth: QC Budi"/></div>
+    <div class="start-field"><label>Lot (Batch)</label><input id="stLot" type="text" maxlength="100" placeholder="cth: LOT-1029"/></div>
+    <div class="start-field">
+      <label>Jenis Benang</label>
+      <select id="stYarn" style="width:100%;padding:.65rem .75rem;border:1px solid var(--border);border-radius:var(--radius-sm);font:inherit;background:var(--surface);color:var(--text)">
+        <option value="">— Pilih Jenis Benang —</option>
+      </select>
+    </div>
+    <div class="start-field">
+      <label>Setting</label>
+      <select id="stSetting" style="width:100%;padding:.65rem .75rem;border:1px solid var(--border);border-radius:var(--radius-sm);font:inherit;background:var(--surface);color:var(--text)">
+        <option value="">— Pilih Setting —</option>
+      </select>
+    </div>
+    <div id="startErr" style="color:var(--danger);font-size:.82rem;display:none;margin-top:.25rem"></div>
+    <div class="start-acts">
+      <button type="button" class="btn-start-cancel" id="startCancel">Batal</button>
+      <button type="button" class="btn-start-go" id="startConfirm">Mulai</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -253,126 +446,383 @@
   function rollStatusPill(status) {
     const s = (status || '').toUpperCase();
     const map = {
-      NEW:         ['pill-new', 'NEW'],
+      NEW:         ['pill-new', 'BARU'],
       IN_PROGRESS: ['pill-ip',  'IN PROGRESS'],
-      SUBMITTED:   ['pill-sub', 'SUBMITTED'],
-      VALIDATED:   ['pill-val', 'VALIDATED'],
-      PENDING:     ['pill-pnd', 'PENDING — Re-inspection Required'],
+      SUBMITTED:   ['pill-sub', 'TAHAN'],
+      VALIDATED:   ['pill-val', 'LOLOS'],
+      PENDING:     ['pill-pnd', 'RE-INSPEKSI — Re-inspeksi Diperlukan'],
     };
     const [cls, label] = map[s] ?? ['pill-new', s];
     return `<span class="status-pill ${cls}">${label}</span>`;
   }
 
-  // ── Render roll cards ─────────────────────────────────
-  function renderRolls(rolls) {
-    const container = document.getElementById('rollList');
-    // Show rolls that operator can act on: NEW (first inspection) or PENDING (re-inspection after QC reject)
-    const available = rolls.filter(r => ['NEW', 'PENDING'].includes((r.status || '').toUpperCase()));
+  // ── State ─────────────────────────────────────────────
+  let _allRolls    = [];   // semua roll tersedia
+  let _groups      = {};   // grouped by customer name
+  let _colorMap    = {};   // nama customer → [c1, c2, emoji]
 
-    const countEl = document.getElementById('rollCount');
-    if (available.length > 0) {
-      countEl.textContent = available.length;
-      countEl.style.display = 'inline-block';
-    } else {
-      countEl.style.display = 'none';
-    }
+  const COLORS = [
+    ['#4f46e5','#7c3aed','🏢'], ['#059669','#0d9488','🏭'],
+    ['#d97706','#b45309','🧶'], ['#dc2626','#b91c1c','👔'],
+    ['#7c3aed','#a21caf','🎯'], ['#0284c7','#0369a1','📦'],
+    ['#0891b2','#0e7490','🧵'], ['#16a34a','#15803d','🎨'],
+  ];
 
-    if (available.length === 0) {
+  // ── Build group map ───────────────────────────────────
+  function buildGroups(rolls) {
+    const groups = {};
+    rolls.forEach(roll => {
+      const name = roll.request?.client?.client_name
+                ?? roll.inspection_request?.client?.client_name
+                ?? 'Tanpa Customer';
+      if (!groups[name]) groups[name] = [];
+      groups[name].push(roll);
+    });
+    // Assign warna per customer (sorted agar konsisten)
+    const sorted = Object.keys(groups).sort();
+    sorted.forEach((name, i) => {
+      _colorMap[name] = COLORS[i % COLORS.length];
+    });
+    return groups;
+  }
+
+  // ── OUTER VIEW: render customer cards ─────────────────
+  function showOuterView(query = '') {
+    document.getElementById('outerView').style.display = 'block';
+    document.getElementById('innerView').style.display = 'none';
+    document.getElementById('outerBar').style.display  = 'flex';
+
+    const q    = query.trim().toLowerCase();
+    const keys = Object.keys(_groups).sort().filter(k => !q || k.toLowerCase().includes(q));
+    const container = document.getElementById('customerList');
+    container.innerHTML = '';
+
+    if (keys.length === 0) {
       container.innerHTML = `
-        <div class="state-box">
-          <div class="state-icon">📋</div>
-          <h3>Tidak Ada Roll yang Perlu Diinspeksi</h3>
-          <p>Saat ini tidak ada roll berstatus NEW atau PENDING.<br>Roll baru akan muncul ketika Admin / QC menambahkannya.</p>
+        <div class="no-result">
+          <div class="no-result-icon">🔍</div>
+          <div>Customer <strong>"${esc(query)}"</strong> tidak ditemukan</div>
         </div>`;
       return;
     }
 
-    container.innerHTML = '';
-    const list = document.createElement('div');
-    list.className = 'roll-list';
+    const grid = document.createElement('div');
+    grid.className = 'customer-grid';
 
-    available.forEach(roll => {
-      const status      = (roll.status || '').toUpperCase();
-      const isPending   = status === 'PENDING';
-      const machineName = roll.machine?.machine_name ?? '—';
-      const reqCode     = roll.request?.request_code ?? roll.inspection_request?.request_code ?? '—';
-      const client      = roll.request?.client?.client_name ?? roll.inspection_request?.client?.client_name ?? '';
-      const length      = parseFloat(roll.length_meter ?? 0).toFixed(0);
-      const batch       = roll.batch_number ?? '—';
+    keys.forEach(name => {
+      const rolls   = _groups[name];
+      const [c1, c2, emoji] = _colorMap[name] ?? COLORS[0];
+      const pending = rolls.filter(r => (r.status||'').toUpperCase() === 'PENDING').length;
 
       const card = document.createElement('div');
-      card.className = 'roll-card';
-      if (isPending) card.style.borderColor = 'rgba(239,68,68,.35)';
-      card.id = `roll-card-${roll.id}`;
+      card.className = 'customer-card';
+      card.style.setProperty('--cust-c1', c1);
+      card.querySelector?.('::before');
       card.innerHTML = `
-        <div class="roll-top">
-          <div class="roll-code">${esc(roll.roll_code)}</div>
-          ${rollStatusPill(status)}
+        <style>.customer-card[data-name="${esc(name)}"]::before{background:linear-gradient(to bottom,${c1},${c2});}</style>
+        <div class="cust-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${emoji}</div>
+        <div class="cust-info">
+          <div class="cust-name">${esc(name)}</div>
+          <div class="cust-sub">${rolls.length} roll menunggu inspeksi</div>
         </div>
-        ${isPending ? `<div style="font-size:.78rem;color:#ef4444;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem">⚠ Dikembalikan QC — perlu inspeksi ulang</div>` : ''}
-        <div class="roll-meta-grid">
-          <div class="meta-item">
-            <div class="meta-label">Mesin</div>
-            <div class="meta-value">
-              <span class="machine-tag">⚙ ${esc(machineName)}</span>
-            </div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Panjang</div>
-            <div class="meta-value mono">${esc(length)} m</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Batch</div>
-            <div class="meta-value">${esc(batch)}</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Request</div>
-            <div class="meta-value">${esc(reqCode)}${client ? ` · ${esc(client)}` : ''}</div>
-          </div>
+        <div class="cust-badge">
+          <span class="cust-count">${rolls.length} roll</span>
+          ${pending > 0 ? `<span class="cust-pending-count">⚠ ${pending} re-inspeksi</span>` : ''}
         </div>
-        <button class="btn-start" id="start-${roll.id}" style="${isPending ? 'background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 4px 16px rgba(239,68,68,.28)' : ''}">
-          ${isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi'}
-        </button>`;
-
-      card.querySelector(`#start-${roll.id}`)
-          .addEventListener('click', () => startInspection(roll.id, card.querySelector(`#start-${roll.id}`), isPending));
-
-      list.appendChild(card);
+        <div class="cust-arrow">›</div>`;
+      card.setAttribute('data-name', name);
+      card.addEventListener('click', () => showInnerView(name));
+      grid.appendChild(card);
     });
 
+    container.appendChild(grid);
+  }
+
+  // ── INNER VIEW: render rolls per customer ──────────────
+  function showInnerView(customerName) {
+    document.getElementById('outerView').style.display = 'none';
+    document.getElementById('outerBar').style.display  = 'none';
+    document.getElementById('innerView').style.display = 'block';
+
+    const rolls = _groups[customerName] ?? [];
+    document.getElementById('innerCustName').textContent  = customerName;
+    document.getElementById('innerRollCount').textContent = `${rolls.length} roll`;
+    document.getElementById('rollSearch').value = '';
+
+    renderRollList(rolls, '');
+
+    // live search dalam inner
+    document.getElementById('rollSearch').oninput = function() {
+      renderRollList(rolls, this.value);
+    };
+  }
+
+  // ── Build single roll card ─────────────────────────────
+  function buildRollCard(roll) {
+    const status    = (roll.status || '').toUpperCase();
+    const isPending = status === 'PENDING';
+    const opk       = roll.request?.opk ?? roll.inspection_request?.opk ?? '—';
+    const reqCode   = roll.request?.request_code ?? roll.inspection_request?.request_code ?? '—';
+    const client    = roll.request?.client?.client_name ?? roll.inspection_request?.client?.client_name ?? '';
+
+    const card = document.createElement('div');
+    card.className = 'roll-card';
+    if (isPending) card.style.borderColor = 'rgba(239,68,68,.35)';
+    card.id = `roll-card-${roll.id}`;
+    card.innerHTML = `
+      <div class="roll-top">
+        <div class="roll-code">${esc(roll.roll_code)}</div>
+        ${rollStatusPill(status)}
+      </div>
+      ${isPending ? `<div style="font-size:.78rem;color:#ef4444;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem">⚠ Dikembalikan QC — perlu inspeksi ulang</div>` : ''}
+      <div class="roll-meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">OPK</div>
+          <div class="meta-value">${esc(opk)}</div>
+        </div>
+        <div class="meta-item" style="grid-column:span 2">
+          <div class="meta-label">Order</div>
+          <div class="meta-value">${esc(reqCode)}${client ? ` · ${esc(client)}` : ''}</div>
+        </div>
+      </div>
+      <button class="btn-start" id="start-${roll.id}" style="${isPending ? 'background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 4px 16px rgba(239,68,68,.28)' : ''}">
+        ${isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi'}
+      </button>`;
+    card.querySelector(`#start-${roll.id}`)
+        .addEventListener('click', () => openStartModal(roll, card.querySelector(`#start-${roll.id}`), isPending));
+    return card;
+  }
+
+  // ── Render roll list dengan filter ────────────────────
+  function renderRollList(rolls, query = '') {
+    const container = document.getElementById('rollList');
+    container.innerHTML = '';
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? rolls.filter(r => (r.roll_code||'').toLowerCase().includes(q))
+      : rolls;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="no-result">
+          <div class="no-result-icon">🔍</div>
+          <div>Roll <strong>"${esc(query)}"</strong> tidak ditemukan</div>
+        </div>`;
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'roll-list';
+    filtered.forEach(roll => list.appendChild(buildRollCard(roll)));
     container.appendChild(list);
   }
 
-  // ── Start inspection ──────────────────────────────────
-  async function startInspection(rollId, btn, isPending = false) {
+  // ── Render rolls entry point ───────────────────────────
+  function renderRolls(rolls) {
+    const available = rolls.filter(r => ['NEW','PENDING'].includes((r.status||'').toUpperCase()));
+    _allRolls = available;
+    _groups   = buildGroups(available);
+
+    const countEl = document.getElementById('rollCount');
+    const custSearch = document.getElementById('custSearchWrap');
+    const custKeys = Object.keys(_groups);
+
+    if (custKeys.length > 0) {
+      countEl.textContent = custKeys.length;
+      countEl.style.display = 'inline-block';
+      custSearch.style.display = 'block';
+    } else {
+      countEl.style.display = 'none';
+      custSearch.style.display = 'none';
+    }
+
+    if (available.length === 0) {
+      document.getElementById('customerList').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">📋</div>
+          <h3>Tidak Ada Roll yang Perlu Diinspeksi</h3>
+          <p>Saat ini tidak ada roll berstatus BARU atau RE-INSPEKSI.<br>Roll baru akan muncul ketika Admin / QC menambahkannya.</p>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('customerSearch').value = '';
+    showOuterView();
+  }
+
+  // ── Start inspection modal ────────────────────────────
+  let pendingStart = null;
+  let selectedShift = '';
+
+  document.querySelectorAll('.shift-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedShift = btn.dataset.shift;
+    });
+  });
+
+  document.getElementById('startCancel').addEventListener('click', () => {
+    document.getElementById('modalStart').classList.remove('open');
+    if (pendingStart?.btn) {
+      pendingStart.btn.disabled = false;
+      pendingStart.btn.innerHTML = pendingStart.defaultLabel;
+    }
+    pendingStart = null;
+  });
+
+  // ── Load yarn types dropdown ───────────────────────
+  async function loadYarnOptions(preSelectName = '') {
+    const sel = document.getElementById('stYarn');
+    sel.innerHTML = '<option value="">Memuat…</option>';
+    try {
+      const res  = await fetch(`${BASE}/operator/yarn-types`, { headers: auth() });
+      const data = await res.json();
+      const list = data?.data ?? data ?? [];
+      sel.innerHTML = '<option value="">— Pilih Jenis Benang —</option>' +
+        list.map(y => `<option value="${y.id}">${esc(y.yarn_name)}</option>`).join('');
+      // pre-select berdasarkan nama
+      if (preSelectName) {
+        const opt = Array.from(sel.options).find(o => o.text === preSelectName);
+        if (opt) sel.value = opt.value;
+      }
+    } catch (_) {
+      sel.innerHTML = '<option value="">Gagal memuat — ketik manual</option>';
+    }
+  }
+
+  // ── Load setting dropdown ──────────────────────
+  async function loadSettingOptions(preSelectId = '') {
+    const sel = document.getElementById('stSetting');
+    sel.innerHTML = '<option value="">Memuat…</option>';
+    try {
+      const res  = await fetch(`${BASE}/operator/settings`, { headers: auth() });
+      const data = await res.json();
+      const list = data?.data ?? data ?? [];
+      sel.innerHTML = '<option value="">— Pilih Setting —</option>' +
+        list.map(s => `<option value="${s.id}">${esc(s.setting_name)}</option>`).join('');
+      if (preSelectId) sel.value = String(preSelectId);
+    } catch (_) {
+      sel.innerHTML = '<option value="">Gagal memuat</option>';
+    }
+  }
+
+  function openStartModal(roll, btn, isPending = false) {
+    pendingStart = {
+      rollId: roll.id,
+      rollCode: roll.roll_code,
+      btn,
+      isPending,
+      defaultLabel: isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi',
+    };
+    selectedShift = '';
+    document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('startRollTitle').textContent = `Mulai — ${roll.roll_code}`;
+
+    // Populate read-only metadata
+    document.getElementById('mInfoOpk').textContent  = roll.request?.opk ?? roll.inspection_request?.opk ?? '—';
+    document.getElementById('mInfoOp').textContent   = roll.assigned_operator?.name ?? roll.operator?.name ?? '—';
+    document.getElementById('mInfoRoll').textContent = roll.roll_code;
+    document.getElementById('mInfoYarn').textContent = roll.request?.yarn_type?.yarn_name ?? roll.inspection_request?.yarn_type?.yarn_name ?? '—';
+    document.getElementById('mInfoSetting').textContent = roll.request?.setting?.setting_name ?? roll.inspection_request?.setting?.setting_name ?? '—';
+    document.getElementById('mInfoNotes').textContent = roll.request?.notes ?? roll.inspection_request?.notes ?? '—';
+
+    // Populate input fields
+    document.getElementById('stQc').value      = roll.request?.qc?.name ?? roll.inspection_request?.qc?.name ?? '';
+    document.getElementById('stLot').value     = roll.batch_number ?? '';
+
+    // Load Jenis Benang dropdown (pre-select dari yarn_type roll/request)
+    const preYarn = roll.yarn_type?.yarn_name ?? roll.request?.yarn_type?.yarn_name ?? '';
+    loadYarnOptions(preYarn);
+
+    // Load Setting dropdown (pre-select dari setting_id roll/request)
+    const preSettingId = roll.setting?.id ?? roll.request?.setting?.id ?? '';
+    loadSettingOptions(preSettingId);
+
+    const err = document.getElementById('startErr');
+    err.style.display = 'none';
+    err.textContent   = '';
+    document.getElementById('modalStart').classList.add('open');
+  }
+
+  document.getElementById('startConfirm').addEventListener('click', submitStartInspection);
+
+  async function submitStartInspection() {
+    if (!pendingStart) return;
+    const err = document.getElementById('startErr');
+    const qc = document.getElementById('stQc').value.trim();
+    const lot = document.getElementById('stLot').value.trim();
+    const yarnSel    = document.getElementById('stYarn');
+    const yarn       = yarnSel.options[yarnSel.selectedIndex]?.text ?? '';
+    const yarnVal    = yarnSel.value;
+    const settingSel = document.getElementById('stSetting');
+    const settingVal = settingSel.value;
+
+    if (!selectedShift) {
+      err.textContent = 'Pilih shift kerja.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!qc) {
+      err.textContent = 'Nama QC wajib diisi.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!lot) {
+      err.textContent = 'Lot wajib diisi.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!yarnVal) {
+      err.textContent = 'Jenis benang wajib dipilih.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!settingVal) {
+      err.textContent = 'Setting wajib dipilih.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('startConfirm');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>&nbsp; Memulai…';
-    const defaultLabel = isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi';
+    btn.textContent = 'Memulai…';
 
     try {
-      const res  = await fetch(`${BASE}/operator/rolls/${rollId}/start`, {
-        method: 'POST', headers: auth(),
+      const res = await fetch(`${BASE}/operator/rolls/${pendingStart.rollId}/start`, {
+        method: 'POST',
+        headers: auth(),
+        body: JSON.stringify({
+          shift:        selectedShift,
+          yarn_name:    yarn,
+          qc_name:      qc,
+          batch_number: lot,
+          setting_id:   settingVal || null,
+        }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        toast(data.message || 'Gagal memulai inspeksi.', 'error');
-        btn.disabled = false;
-        btn.innerHTML = defaultLabel;
+        err.textContent = data.message || 'Gagal memulai inspeksi.';
+        err.style.display = 'block';
         return;
       }
 
-      // Save inspection id — handle various envelope shapes
       const inspId = data.data?.id ?? data.id ?? data.inspection?.id;
       if (inspId) localStorage.setItem('inspection_id', String(inspId));
 
-      toast(isPending ? 'Inspeksi ulang dimulai!' : 'Inspeksi dimulai!', 'success', 1200);
+      document.getElementById('modalStart').classList.remove('open');
+      toast(pendingStart.isPending ? 'Inspeksi ulang dimulai!' : 'Inspeksi dimulai!', 'success', 1200);
       setTimeout(() => window.location.href = 'inspection.html', 800);
-
     } catch (_) {
-      toast('Koneksi gagal. Coba lagi.', 'error');
+      err.textContent = 'Koneksi gagal. Coba lagi.';
+      err.style.display = 'block';
+    } finally {
       btn.disabled = false;
-      btn.innerHTML = defaultLabel;
+      btn.textContent = 'Mulai';
+      if (pendingStart?.btn) {
+        pendingStart.btn.disabled = false;
+        pendingStart.btn.innerHTML = pendingStart.defaultLabel;
+      }
     }
   }
 
@@ -391,6 +841,17 @@
 
   // ── Auto-refresh every 45s ────────────────────────────
   setInterval(loadRolls, 45_000);
+
+  // ── Tombol Kembali (inner → outer) ───────────────────
+  document.getElementById('btnBack').addEventListener('click', () => {
+    document.getElementById('rollSearch').value = '';
+    showOuterView(document.getElementById('customerSearch').value);
+  });
+
+  // ── Live search customer (outer view) ────────────────
+  document.getElementById('customerSearch').addEventListener('input', function () {
+    showOuterView(this.value);
+  });
 
   // ── Init ──────────────────────────────────────────────
   checkActiveInspection();

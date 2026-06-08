@@ -14,7 +14,7 @@ enum InspectionRequestStatus: string
         return match ($this) {
             self::NEW         => [self::IN_PROGRESS],
             self::IN_PROGRESS => [self::COMPLETED],
-            self::COMPLETED   => [],
+            self::COMPLETED   => [self::IN_PROGRESS],
         };
     }
 

@@ -29,6 +29,9 @@ class AnalyticsService
         if (!empty($f['client_id'])) {
             $q->whereHas('roll.inspectionRequest', fn($r) => $r->where('client_id', $f['client_id']));
         }
+        if (!empty($f['opk'])) {
+            $q->whereHas('roll.inspectionRequest', fn($r) => $r->where('opk', 'like', '%' . $f['opk'] . '%'));
+        }
 
         return $q;
     }
@@ -40,8 +43,9 @@ class AnalyticsService
         $q = $this->baseInspectionQuery($f);
 
         $total  = (clone $q)->count();
-        $passed = (clone $q)->where('result', 'PASS')->count();
-        $failed = (clone $q)->where('result', 'FAIL')->count();
+        $gradeA = (clone $q)->where('result', 'A')->count();
+        $gradeB = (clone $q)->where('result', 'B')->count();
+        $gradeBs = (clone $q)->where('result', 'BS')->count();
         $pendingQC  = (clone $q)->where('status', 'SUBMITTED')->count();
         $avgScore   = (clone $q)->whereNotNull('score')->avg('score') ?? 0;
 
@@ -69,10 +73,12 @@ class AnalyticsService
 
         return [
             'total_inspections'  => $total,
-            'pass_count'         => $passed,
-            'fail_count'         => $failed,
-            'pass_rate'          => $total > 0 ? round($passed / $total * 100, 1) : 0,
-            'fail_rate'          => $total > 0 ? round($failed / $total * 100, 1) : 0,
+            'grade_a_count'      => $gradeA,
+            'grade_b_count'      => $gradeB,
+            'grade_bs_count'     => $gradeBs,
+            'grade_a_rate'       => $total > 0 ? round($gradeA / $total * 100, 1) : 0,
+            'grade_b_rate'       => $total > 0 ? round($gradeB / $total * 100, 1) : 0,
+            'grade_bs_rate'      => $total > 0 ? round($gradeBs / $total * 100, 1) : 0,
             'avg_score'          => round((float) $avgScore, 2),
             'total_defects'      => $totalDefects,
             'pending_qc'         => $pendingQC,
@@ -90,8 +96,9 @@ class AnalyticsService
         return Inspection::query()
             ->selectRaw("DATE(created_at) as date,
                 COUNT(*) as total,
-                SUM(CASE WHEN result='PASS' THEN 1 ELSE 0 END) as passed,
-                SUM(CASE WHEN result='FAIL' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN result='A' THEN 1 ELSE 0 END) as grade_a,
+                SUM(CASE WHEN result='B' THEN 1 ELSE 0 END) as grade_b,
+                SUM(CASE WHEN result='BS' THEN 1 ELSE 0 END) as grade_bs,
                 SUM(CASE WHEN status='REJECTED' THEN 1 ELSE 0 END) as rejected")
             ->whereDate('created_at', '>=', now()->subDays($days - 1))
             ->when(!empty($f['machine_id']), fn($q) => $q->whereHas('roll', fn($r) => $r->where('machine_id', $f['machine_id'])))
@@ -102,8 +109,9 @@ class AnalyticsService
             ->map(fn($r) => [
                 'date'     => $r->date,
                 'total'    => (int) $r->total,
-                'passed'   => (int) $r->passed,
-                'failed'   => (int) $r->failed,
+                'grade_a'  => (int) $r->grade_a,
+                'grade_b'  => (int) $r->grade_b,
+                'grade_bs' => (int) $r->grade_bs,
                 'rejected' => (int) $r->rejected,
             ])
             ->values()
@@ -145,8 +153,9 @@ class AnalyticsService
             ->join('machines', 'fabric_rolls.machine_id', '=', 'machines.id')
             ->selectRaw("machines.machine_name,
                 COUNT(*) as total,
-                SUM(CASE WHEN inspections.result='PASS' THEN 1 ELSE 0 END) as passed,
-                SUM(CASE WHEN inspections.result='FAIL' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN inspections.result='A' THEN 1 ELSE 0 END) as grade_a,
+                SUM(CASE WHEN inspections.result='B' THEN 1 ELSE 0 END) as grade_b,
+                SUM(CASE WHEN inspections.result='BS' THEN 1 ELSE 0 END) as grade_bs,
                 AVG(inspections.score) as avg_score,
                 SUM(CASE WHEN inspections.status='REJECTED' THEN 1 ELSE 0 END) as rejection_count")
             ->when(!empty($f['date_from']), fn($q) => $q->whereDate('inspections.created_at', '>=', $f['date_from']))
@@ -158,8 +167,9 @@ class AnalyticsService
             ->map(fn($r) => [
                 'machine'         => $r->machine_name,
                 'total'           => (int) $r->total,
-                'pass_rate'       => $r->total > 0 ? round($r->passed / $r->total * 100, 1) : 0,
-                'fail_rate'       => $r->total > 0 ? round($r->failed / $r->total * 100, 1) : 0,
+                'grade_a_rate'    => $r->total > 0 ? round($r->grade_a / $r->total * 100, 1) : 0,
+                'grade_b_rate'    => $r->total > 0 ? round($r->grade_b / $r->total * 100, 1) : 0,
+                'grade_bs_rate'   => $r->total > 0 ? round($r->grade_bs / $r->total * 100, 1) : 0,
                 'avg_score'       => round((float) $r->avg_score, 2),
                 'rejection_count' => (int) $r->rejection_count,
             ])

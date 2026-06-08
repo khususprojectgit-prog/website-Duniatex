@@ -14,6 +14,8 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
 .tbl-actions{display:flex;gap:.4rem}
 .btn-edit{background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:6px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
 .btn-edit:hover{background:rgba(79,70,229,.15)}
+.btn-val{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);border-radius:6px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
+.btn-val:hover{background:rgba(5,150,105,.15)}
 .btn-del{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);border-radius:6px;font:.78rem 'Inter',sans-serif;font-weight:600;padding:.3rem .7rem;cursor:pointer;transition:all .2s}
 .btn-del:hover{background:rgba(220,38,38,.15)}
 .btn-add{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font:.85rem 'Inter',sans-serif;font-weight:700;padding:.5rem 1rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;box-shadow:0 4px 12px var(--accent-glow);transition:opacity .2s}
@@ -37,49 +39,43 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
 
 <header>
   <div class="header-left">
-    <div class="admin-icon">⚙️</div>
+    <img src="sources/logo-duniatex.jpg" alt="Logo Duniatex" style="width:38px;height:38px;border-radius:10px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 12px var(--accent-glow)"/>
     <div>
       <div class="header-title">Duniatex <span class="badge-admin">Admin</span></div>
       <div class="header-sub" id="uname">Administrator</div>
     </div>
   </div>
-  <button class="btn-logout" id="logoutBtn">Keluar</button>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <button onclick="location.href='analytics.html'" style="background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:6px;font:.8rem 'Inter',sans-serif;font-weight:600;padding:.4rem .8rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.3rem">📊 Analitik</button>
+    <button class="btn-logout" id="logoutBtn">Keluar</button>
+  </div>
 </header>
 
 <main>
   <!-- Stats -->
   <div class="stats-grid" id="statsGrid">
     <div class="stat-card"><div class="stat-label">Users</div><div class="stat-value" style="color:var(--accent)" id="sUsers">—</div></div>
-    <div class="stat-card"><div class="stat-label">Clients</div><div class="stat-value" style="color:var(--success)" id="sClients">—</div></div>
+    <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value" style="color:var(--success)" id="sClients">—</div></div>
     <div class="stat-card"><div class="stat-label">Machines</div><div class="stat-value" style="color:var(--warning)" id="sMachines">—</div></div>
-    <div class="stat-card"><div class="stat-label">Requests</div><div class="stat-value" style="color:var(--accent)" id="sRequests">—</div></div>
-    <div class="stat-card"><div class="stat-label">Total Rolls</div><div class="stat-value" style="color:var(--text)" id="sRolls">—</div></div>
     <div class="stat-card"><div class="stat-label">Defect Types</div><div class="stat-value" style="color:var(--danger)" id="sDefects">—</div></div>
-  </div>
-
-  <!-- Workflow Diagram -->
-  <div class="flow-wrap">
-    <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:.4rem">Workflow:</span>
-    <span class="flow-step sp-new">NEW</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-ip">IN PROGRESS</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-sub">SUBMITTED</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-val">VALIDATED</span>
-    <span class="flow-or">or</span>
-    <span class="flow-step sp-sub">SUBMITTED</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-rej">REJECTED</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-pnd">PENDING</span><span class="flow-arrow">→</span>
-    <span class="flow-step sp-ip">IN PROGRESS</span>
+    <div class="stat-card"><div class="stat-label">Jenis Benang</div><div class="stat-value" style="color:#7c3aed" id="sYarns">—</div></div>
+    <div class="stat-card"><div class="stat-label">Master Setting</div><div class="stat-value" style="color:#0ea5e9" id="sSettings">—</div></div>
+    <div class="stat-card"><div class="stat-label">Orders</div><div class="stat-value" style="color:var(--accent)" id="sRequests">—</div></div>
+    <div class="stat-card"><div class="stat-label">Total Rolls</div><div class="stat-value" style="color:var(--text)" id="sRolls">—</div></div>
   </div>
 
   <!-- Tabs -->
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="users">👥 Users</button>
-    <button class="tab-btn" data-tab="clients">🏢 Clients</button>
-    <button class="tab-btn" data-tab="machines">🏭 Machines</button>
-    <button class="tab-btn" data-tab="requests">📋 Requests</button>
-    <button class="tab-btn" data-tab="rolls">🧵 Fabric Rolls</button>
-    <button class="tab-btn" onclick="location.href='analytics.html'" style="background:linear-gradient(135deg,rgba(5,150,105,.1),rgba(79,70,229,.1));border-color:rgba(79,70,229,.2);color:var(--accent)">📊 Analytics</button>
-    <button class="tab-btn" data-tab="defects">🔖 Defect Types</button>
+  <div class="tab-bar" style="overflow-x:auto;white-space:nowrap;padding-bottom:.3rem">
+    <button class="tab-btn active" data-tab="users">👥 User</button>
+    <button class="tab-btn" data-tab="clients">🏢 Customer</button>
+    <button class="tab-btn" data-tab="yarns">🧶 Jenis Benang</button>
+    <button class="tab-btn" data-tab="machines">🏭 Mesin</button>
+    <button class="tab-btn" data-tab="settings">⚙️ Setting</button>
+    <button class="tab-btn" data-tab="gramasi">⚖️ Gramasi</button>
+    <button class="tab-btn" data-tab="defects">🔖 Defect</button>
+    <button class="tab-btn" data-tab="requests">📋 Order</button>
+    <button class="tab-btn" data-tab="rolls">🧵 Semua Roll</button>
+    <button class="tab-btn" data-tab="final-data" style="background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(79,70,229,.12));border-color:rgba(79,70,229,.25);color:var(--accent);font-weight:700">🏁 Final Data</button>
   </div>
 
   <!-- Tab: Users -->
@@ -90,7 +86,6 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
         <option value="">Semua Role</option>
         <option value="admin">Admin</option>
         <option value="qc">QC</option>
-        <option value="operator">Operator</option>
       </select>
       <button class="btn-add" onclick="openUserModal()">＋ Tambah User</button>
     </div>
@@ -104,11 +99,11 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
   <!-- Tab: Clients -->
   <div class="tab-panel" id="tab-clients">
     <div class="search-bar">
-      <input type="text" id="searchClients" placeholder="Cari klien…" oninput="debounce(loadClients,400)()"/>
-      <button class="btn-add" onclick="openClientModal()">＋ Tambah Client</button>
+      <input type="text" id="searchClients" placeholder="Cari customer…" oninput="debounce(loadClients,400)()"/>
+      <button class="btn-add" onclick="openClientModal()">＋ Tambah Customer</button>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Kode</th><th>Nama Client</th><th>Contact</th><th>Phone</th><th>Requests</th><th></th></tr></thead>
+      <thead><tr><th>Nama Customer</th><th>Contact</th><th>Orders</th><th></th></tr></thead>
       <tbody id="tbClients"></tbody>
     </table></div>
     <div class="pager" id="pgClients"></div>
@@ -121,26 +116,26 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
       <button class="btn-add" onclick="openMachineModal()">＋ Tambah Mesin</button>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Nama Mesin</th><th>Tipe</th><th>Lokasi</th><th></th></tr></thead>
+      <thead><tr><th>Nama Mesin</th><th></th></tr></thead>
       <tbody id="tbMachines"></tbody>
     </table></div>
     <div class="pager" id="pgMachines"></div>
   </div>
 
-  <!-- Tab: Requests -->
+  <!-- Tab: Orders -->
   <div class="tab-panel" id="tab-requests">
     <div class="search-bar">
-      <input type="text" id="searchReq" placeholder="Cari kode request…" oninput="debounce(loadRequests,400)()"/>
+      <input type="text" id="searchReq" placeholder="Cari kode order…" oninput="debounce(loadRequests,400)()"/>
       <select id="filterReqStatus" onchange="loadRequests()" style="width:auto;padding:.5rem .8rem">
         <option value="">Semua Status</option>
-        <option value="NEW">NEW</option>
+        <option value="NEW">BARU</option>
         <option value="IN_PROGRESS">IN PROGRESS</option>
-        <option value="COMPLETED">COMPLETED</option>
+        <option value="COMPLETED">SELESAI</option>
       </select>
-      <button class="btn-add" onclick="openRequestModal()">＋ Buat Request</button>
+      <button class="btn-add" onclick="openRequestModal()">＋ Buat Order</button>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Kode</th><th>Client</th><th>Status</th><th>Rolls</th><th>QC</th><th>Tanggal</th></tr></thead>
+      <thead><tr><th>OPK</th><th>Customer</th><th>Jenis Benang</th><th>Setting</th><th>Gramasi</th><th>Status</th><th>Rolls</th><th>Tanggal</th><th></th></tr></thead>
       <tbody id="tbRequests"></tbody>
     </table></div>
     <div class="pager" id="pgRequests"></div>
@@ -150,17 +145,18 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
   <div class="tab-panel" id="tab-rolls">
     <div class="search-bar">
       <input type="text" id="searchRolls" placeholder="Cari roll code…" oninput="debounce(loadRolls,400)()"/>
+      <input type="text" id="searchRollsOpk" placeholder="Cari OPK…" oninput="debounce(loadRolls,400)()"/>
       <select id="filterRollStatus" onchange="loadRolls()" style="width:auto;padding:.5rem .8rem">
         <option value="">Semua Status</option>
-        <option value="NEW">NEW</option>
+        <option value="NEW">BARU</option>
         <option value="IN_PROGRESS">IN PROGRESS</option>
-        <option value="SUBMITTED">SUBMITTED</option>
-        <option value="VALIDATED">VALIDATED</option>
-        <option value="PENDING">PENDING</option>
+        <option value="QC_VALIDATED">VALIDASI QC</option>
+        <option value="PENDING">RE-INSPEKSI</option>
+        <option value="RELEASED">RILIS</option>
       </select>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Roll Code</th><th>Request</th><th>Client</th><th>Mesin</th><th>Status</th><th>Operator</th><th>Score</th><th>Result</th></tr></thead>
+      <thead><tr><th>Roll Code</th><th>OPK</th><th>Customer</th><th>Mesin</th><th>Status</th><th>Inspeksi</th><th>Score</th><th></th></tr></thead>
       <tbody id="tbRolls"></tbody>
     </table></div>
     <div class="pager" id="pgRolls"></div>
@@ -174,6 +170,57 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
     <div class="tbl-wrap"><table>
       <thead><tr><th>Nama Cacat</th><th>Kategori</th><th>Poin</th><th></th></tr></thead>
       <tbody id="tbDefects"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Tab: Jenis Benang -->
+  <div class="tab-panel" id="tab-yarns">
+    <div class="search-bar">
+      <input type="text" id="searchYarns" placeholder="Cari jenis benang…" oninput="debounce(loadYarns,400)()"/>
+      <button class="btn-add" onclick="openYarnModal()">＋ Tambah Jenis Benang</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Nama Benang</th><th></th></tr></thead>
+      <tbody id="tbYarns"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Tab: Master Setting -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="search-bar">
+      <input type="text" id="searchSettings" placeholder="Cari setting…" oninput="debounce(loadSettings,400)()"/>
+      <button class="btn-add" onclick="openSettingModal()">＋ Tambah Setting</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Setting</th><th>Keterangan</th><th></th></tr></thead>
+      <tbody id="tbSettings"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Tab: Gramasi -->
+  <div class="tab-panel" id="tab-gramasi">
+    <div class="search-bar">
+      <input type="text" id="searchGramasis" placeholder="Cari range gramasi…" oninput="debounce(loadGramasis,400)()"/>
+      <button class="btn-add" onclick="openGramasiModal()">＋ Tambah Gramasi</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Range Gramasi (g/m²)</th><th>Keterangan</th><th></th></tr></thead>
+      <tbody id="tbGramasis"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Tab: Final Data (Validasi Rilis Admin Checker) -->
+  <div class="tab-panel" id="tab-final-data">
+    <p class="slabel" style="font-size:.8rem;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">⏳ Antrean Rilis (Menunggu Verifikasi Checker)</p>
+    <div class="tbl-wrap" style="margin-bottom:2rem"><table>
+      <thead><tr><th>Roll Code</th><th>No. Roll Manual</th><th>Customer</th><th>OPK</th><th>Est. Grade</th><th>QC Inspector</th><th>Tanggal</th><th></th></tr></thead>
+      <tbody id="tbPendingRelease"></tbody>
+    </table></div>
+
+    <p class="slabel" style="font-size:.8rem;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">✅ Histori Data Rilis (Telah Dirilis ke Customer)</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Roll Code</th><th>No. Roll Manual</th><th>Customer</th><th>OPK</th><th>Est. Grade</th><th>QC Inspector</th><th>Validator</th><th>Tanggal Rilis</th><th></th></tr></thead>
+      <tbody id="tbReleased"></tbody>
     </table></div>
   </div>
 </main>
@@ -191,7 +238,7 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
     <div class="form-row">
       <div class="form-field"><label>Password <span id="muPwHint" style="font-weight:400;color:var(--muted)">(biarkan kosong = tidak berubah)</span></label><input id="muPw" type="password" placeholder="min 8 karakter"/></div>
       <div class="form-field"><label>Role</label>
-        <select id="muRole"><option value="operator">Operator</option><option value="qc">QC</option><option value="admin">Admin</option></select>
+        <select id="muRole"><option value="qc">QC</option><option value="admin">Admin</option></select>
       </div>
     </div>
     <div class="form-field"><label>Status</label>
@@ -208,15 +255,12 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
 <!-- Modal: Client -->
 <div id="modalClient" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
   <div class="modal-box" style="max-width:480px;width:100%">
-    <div class="modal-title">🏢 <span id="mcTitle">Tambah Client</span></div>
+    <div class="modal-title">🏢 <span id="mcTitle">Tambah Customer</span></div>
     <div class="form-row">
-      <div class="form-field"><label>Nama Client <span style="color:var(--danger)">*</span></label><input id="mcName" type="text" placeholder="Sari Garment"/></div>
+      <div class="form-field"><label>Nama Customer <span style="color:var(--danger)">*</span></label><input id="mcName" type="text" placeholder="Sari Garment"/></div>
       <div class="form-field"><label>Perusahaan <span style="color:var(--danger)">*</span></label><input id="mcCompany" type="text" placeholder="PT. Sari Garment"/></div>
     </div>
-    <div class="form-row">
-      <div class="form-field"><label>Contact Person <span style="color:var(--danger)">*</span></label><input id="mcContact" type="text" placeholder="Nama PIC"/></div>
-      <div class="form-field"><label>Nomor Telepon <span style="color:var(--danger)">*</span></label><input id="mcPhone" type="text" placeholder="08xx-xxxx-xxxx"/></div>
-    </div>
+    <div class="form-field"><label>Contact Person <span style="color:var(--danger)">*</span></label><input id="mcContact" type="text" placeholder="Nama PIC"/></div>
     <div class="form-field"><label>Alamat</label><input id="mcAddress" type="text" placeholder="Jl. Industri No. 1, Surabaya"/></div>
     <div id="mcErr" class="merr"></div>
     <div class="modal-acts">
@@ -231,10 +275,6 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
   <div class="modal-box" style="max-width:420px;width:100%">
     <div class="modal-title">🏭 <span id="mmTitle">Tambah Mesin</span></div>
     <div class="form-field"><label>Nama Mesin</label><input id="mmName" type="text" placeholder="Mesin A1"/></div>
-    <div class="form-row">
-      <div class="form-field"><label>Tipe</label><input id="mmType" type="text" placeholder="Weaving / Knitting…"/></div>
-      <div class="form-field"><label>Lokasi</label><input id="mmLoc" type="text" placeholder="Lantai 2"/></div>
-    </div>
     <div id="mmErr" class="merr"></div>
     <div class="modal-acts">
       <button class="btn-cancel" onclick="closeModal('modalMachine')">Batal</button>
@@ -243,33 +283,35 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
   </div>
 </div>
 
-<!-- Modal: Inspection Request -->
+<!-- Modal: Inspection Order -->
 <div id="modalRequest" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
   <div class="modal-box" style="max-width:560px;width:100%">
-    <div class="modal-title">📋 Buat Inspection Request</div>
+    <div class="modal-title">📋 <span id="mrTitle">Buat Order</span></div>
     <p style="font-size:.82rem;color:var(--muted);margin:-0.5rem 0 1rem">Roll akan dibuat otomatis sesuai jumlah yang ditentukan.</p>
     <div class="form-row">
-      <div class="form-field"><label>Client <span style="color:var(--danger)">*</span></label>
-        <select id="mrClient"><option value="">— Pilih Client —</option></select>
+      <div class="form-field"><label>Customer <span style="color:var(--danger)">*</span></label>
+        <select id="mrClient"><option value="">— Pilih Customer —</option></select>
       </div>
-      <div class="form-field"><label>QC Penanggung Jawab</label>
-        <select id="mrQC"><option value="">— Pilih QC (opsional) —</option></select>
+      <div class="form-field"><label>OPK <span style="color:var(--danger)">*</span></label>
+        <input id="mrOpk" type="text" placeholder="e.g. OPK-12345"/>
       </div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Mesin</label>
-        <select id="mrMachine"><option value="">— Pilih Mesin (opsional) —</option></select>
+      <div class="form-field"><label>Jenis Benang</label>
+        <select id="mrYarnType"><option value="">— Pilih Jenis Benang —</option></select>
       </div>
+      <div class="form-field"><label>Setting</label>
+        <select id="mrSetting"><option value="">— Pilih Setting —</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Gramasi</label>
+        <select id="mrGramasi"><option value="">— Pilih Gramasi —</option></select>
+      </div>
+    </div>
+    <div class="form-row" id="mrTotalRow">
       <div class="form-field"><label>Jumlah Roll <span style="color:var(--danger)">*</span></label>
-        <input id="mrTotal" type="number" min="1" max="200" placeholder="e.g. 5"/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-field"><label>Panjang per Roll (meter) <span style="color:var(--danger)">*</span></label>
-        <input id="mrLength" type="number" min="1" step="0.01" placeholder="e.g. 100"/>
-      </div>
-      <div class="form-field"><label>Nomor Batch</label>
-        <input id="mrBatch" type="text" placeholder="BATCH-001"/>
+        <input id="mrTotal" type="number" min="1" placeholder="e.g. 5"/>
       </div>
     </div>
     <div class="form-field"><label>Catatan</label>
@@ -278,7 +320,7 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
     <div id="mrErr" class="merr"></div>
     <div class="modal-acts">
       <button class="btn-cancel" onclick="closeModal('modalRequest')">Batal</button>
-      <button class="btn-confirm" id="mrSave" onclick="saveRequest()">Buat Request</button>
+      <button class="btn-confirm" id="mrSave" onclick="saveRequest()">Buat Order</button>
     </div>
   </div>
 </div>
@@ -296,6 +338,63 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
     <div class="modal-acts">
       <button class="btn-cancel" onclick="closeModal('modalDefect')">Batal</button>
       <button class="btn-confirm" id="mdSave" onclick="saveDefect()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Jenis Benang -->
+<div id="modalYarn" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:480px;width:100%">
+    <div class="modal-title">🧶 <span id="myTitle">Tambah Jenis Benang</span></div>
+    <div class="form-field"><label>Nama Benang <span style="color:var(--danger)">*</span></label><input id="myName" type="text" placeholder="Cotton 30s, Polyester 40s, …"/></div>
+    <div id="myErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalYarn')">Batal</button>
+      <button class="btn-confirm" id="mySave" onclick="saveYarn()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Master Setting -->
+<div id="modalSetting" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:480px;width:100%">
+    <div class="modal-title">⚙️ <span id="msTitle">Tambah Setting</span></div>
+    <div class="form-field"><label>Setting <span style="color:var(--danger)">*</span></label><input id="msName" type="text" placeholder="e.g. 18G.30&quot; RIBB 1X1…"/></div>
+    <div class="form-field"><label>Keterangan</label><textarea id="msDesc" rows="3" placeholder="Deskripsi atau catatan…"></textarea></div>
+    <div id="msErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalSetting')">Batal</button>
+      <button class="btn-confirm" id="msSave" onclick="saveSetting()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Master Gramasi -->
+<div id="modalGramasi" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:480px;width:100%">
+    <div class="modal-title">⚖️ <span id="mgTitle">Tambah Gramasi</span></div>
+    <div class="form-field"><label>Range Gramasi (g/m²) <span style="color:var(--danger)">*</span></label><input id="mgRange" type="text" placeholder="Format: min-maks, contoh: 140-145"/></div>
+    <div class="form-field"><label>Keterangan</label><textarea id="mgDesc" rows="3" placeholder="Deskripsi atau catatan…"></textarea></div>
+    <div id="mgErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalGramasi')">Batal</button>
+      <button class="btn-confirm" id="mgSave" onclick="saveGramasi()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reassign Operator -->
+<div id="modalReassign" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:150;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:400px;width:100%">
+    <div class="modal-title">👤 Ubah Operator Roll</div>
+    <p id="reassignRollLabel" style="font-size:.85rem;color:var(--muted);margin:-0.25rem 0 1rem"></p>
+    <div class="form-field"><label>Operator Baru <span style="color:var(--danger)">*</span></label>
+      <select id="reassignOperator"><option value="">— Pilih Operator —</option></select>
+    </div>
+    <div id="reassignErr" class="merr"></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal('modalReassign')">Batal</button>
+      <button class="btn-confirm" id="reassignSave" onclick="saveReassign()">Simpan</button>
     </div>
   </div>
 </div>

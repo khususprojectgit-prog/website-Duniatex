@@ -15,7 +15,11 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
 .ri-val{font-size:.9rem;font-weight:700;margin-top:.1rem;color:var(--text)}
 /* Form */
 .fg{margin-bottom:.9rem}.fg:last-child{margin-bottom:0}
-.point-badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--accent-light);border:1px solid rgba(79,70,229,.2);color:var(--accent);border-radius:9px;padding:.55rem .9rem;font-size:.95rem;font-weight:700}
+.point-selector{display:flex;gap:.5rem;margin-top:.3rem}
+.btn-pt{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:.65rem;font-weight:700;font-size:1rem;cursor:pointer;transition:all .15s ease}
+.btn-pt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.btn-pt.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px var(--accent-glow)}
+.btn-pt:disabled{opacity:.4;cursor:not-allowed}
 .btn-add{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:none;border-radius:var(--radius-sm);font:700 .95rem 'Inter',sans-serif;padding:.85rem;cursor:pointer;transition:opacity .2s,transform .1s;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:.4rem;box-shadow:0 4px 14px var(--accent-glow)}
 .btn-add:active{transform:scale(.98);opacity:.88}
 .btn-add:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
@@ -34,7 +38,7 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
 /* Result hero */
 .result-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.25rem;text-align:center;margin-bottom:1rem;box-shadow:var(--shadow)}
 .rh-result{font-size:2.5rem;font-weight:800;letter-spacing:-1px;margin-bottom:.35rem}
-.rh-result.PASS{color:var(--success)}.rh-result.FAIL{color:var(--danger)}
+.rh-result.A{color:var(--success)}.rh-result.B{color:var(--warning)}.rh-result.BS{color:var(--danger)}
 .rh-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
 .rh-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem;text-align:center}
 .rh-val{font-size:1.2rem;font-weight:800;color:var(--text)}
@@ -43,6 +47,14 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
 .score-bar-fill{height:100%;border-radius:20px;transition:width .8s cubic-bezier(.4,0,.2,1)}
 .score-thresh{font-size:.68rem;color:var(--muted);text-align:right}
 .banner-icon{font-size:1.1rem;flex-shrink:0}
+/* Read-only summary grid (sama gaya dimensi) */
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .9rem}
+.ii .il{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ii .iv{font-size:.9rem;font-weight:700;margin-top:.1rem;color:var(--text)}
+.ii-full{grid-column:1/-1}
+.dimensi-card{border:1px solid var(--accent);background:var(--accent-light);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.summary-part{font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 .5rem}
+.summary-part:first-child{margin-top:0}
 </style>
 </head>
 <body>
@@ -64,26 +76,119 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
 
   <!-- IN_PROGRESS: defect form -->
   <div id="formSection">
+    <!-- Rejection alert if PENDING -->
+    <div class="banner-rejected" id="reinspectionAlert" style="display:none;margin-bottom:1.5rem;align-items:center;gap:.6rem">
+      <span class="banner-icon">⚠️</span>
+      <div><strong>Re-inspeksi Diminta</strong><br><span id="reinspectionReason" style="font-size:.82rem;opacity:.9"></span></div>
+    </div>
+    <p class="slabel">Informasi Dimensi</p>
+    <div class="card" style="border: 1px solid var(--accent); background: var(--accent-light);">
+      <div style="font-size: .8rem; font-weight: 700; color: var(--accent); margin-bottom: .8rem; display: flex; align-items: center; gap: .4rem;">
+        <span>📏</span> Dimensi Hasil Inspeksi
+      </div>
+      <div class="fg" style="margin-bottom: .8rem;">
+        <label for="stLength">Panjang Kain Hasil Inspeksi (Meter)</label>
+        <input id="stLength" type="number" min="0.1" step="0.1" placeholder="cth: 120.5"/>
+      </div>
+      <div class="fg" style="margin-bottom: .8rem;">
+        <label for="stGramasi">Gramasi Hasil Inspeksi (g/m²)</label>
+        <input id="stGramasi" type="text" inputmode="decimal" placeholder="cth: 145-150" autocomplete="off" list="gramasiList"/>
+        <datalist id="gramasiList"></datalist>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:.25rem">Format range: nilai minimum-maksimum</div>
+      </div>
+      <div class="fg" style="margin-bottom: .8rem;">
+        <label for="stLebar">Lebar Hasil Inspeksi (inci)</label>
+        <input id="stLebar" type="number" min="1" step="0.1" placeholder="cth: 72"/>
+      </div>
+      <div class="fg" style="margin-bottom: .8rem;">
+        <label for="stKg">Berat Kain (KG)</label>
+        <input id="stKg" type="number" min="0.01" step="0.01" placeholder="cth: 120"/>
+      </div>
+      <div class="fg" style="margin-bottom: .8rem;">
+        <label for="stMachine">Machine (Mesin)</label>
+        <input id="stMachine" type="text" maxlength="100" placeholder="cth: Loom A1"/>
+      </div>
+      <div class="fg">
+        <label for="stLot">Lot (Batch)</label>
+        <input id="stLot" type="text" maxlength="100" placeholder="cth: LOT-1029"/>
+      </div>
+    </div>
+
     <p class="slabel">Tambah Cacat</p>
     <div class="card">
       <div class="fg">
         <label for="selDefect">Jenis Cacat</label>
         <select id="selDefect"><option value="">— Pilih jenis cacat —</option></select>
       </div>
-      <div class="fg">
-        <label>Point Cacat (4-Point System)</label>
-        <div class="point-badge" id="pointDisplay">— Pilih jenis cacat dahulu</div>
-      </div>
-      <div class="fg">
+      <div class="fg" id="posSingleWrap">
         <label for="inPos">Posisi (meter) <span id="posHint" style="color:var(--mu);font-weight:400"></span></label>
         <input id="inPos" type="number" min="0.1" step="0.1" placeholder="cth: 120"/>
       </div>
-      <div class="fg">
-        <label for="inNotes">Catatan (opsional)</label>
-        <textarea id="inNotes" rows="2" placeholder="Deskripsi tambahan…"></textarea>
+      <div class="fg" id="posRangeWrap" style="display:none">
+        <label>Posisi (meter) — dari s/d sampai <span id="posRangeHint" style="color:var(--mu);font-weight:400"></span></label>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input id="inPosFrom" type="number" min="0.1" step="0.1" placeholder="Dari" style="flex:1;min-width:5rem"/>
+          <span style="color:var(--muted);font-size:.85rem;font-weight:600">s/d</span>
+          <input id="inPosTo" type="number" min="0.1" step="0.1" placeholder="Sampai" style="flex:1;min-width:5rem"/>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:.25rem">Hanya posisi yang pakai range — contoh: 10 s/d 25</div>
+      </div>
+      <div class="fg" id="pointWrap">
+        <label>Point Cacat (4-Point System)</label>
+        <div class="point-selector" id="pointSelector">
+          <button type="button" class="btn-pt" data-point="1">1</button>
+          <button type="button" class="btn-pt" data-point="2">2</button>
+          <button type="button" class="btn-pt" data-point="3">3</button>
+          <button type="button" class="btn-pt" data-point="4">4</button>
+        </div>
+        <input type="hidden" id="inPoint" value=""/>
+        <div id="pointRangeNote" style="display:none;font-size:.68rem;color:var(--muted);margin-top:.35rem">
+          Poin cacat tetap wajib (1–4) untuk Patah Jarum &amp; BOPENG — dipakai untuk perhitungan score.
+        </div>
+      </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+      <button class="btn-add" id="addDepanBtn" style="flex:1;background:linear-gradient(135deg,var(--accent),var(--accent-2));margin-bottom:0">＋&nbsp;Cacat Depan</button>
+      <button class="btn-add" id="addBelakangBtn" style="flex:1;background:linear-gradient(135deg,#e11d48,#fb7185);box-shadow:0 4px 14px rgba(225,29,72,.25);margin-bottom:0">＋&nbsp;Cacat Belakang</button>
+    </div>
+  </div>
+
+  <div id="laporanBlock">
+  <p class="slabel" style="margin-top:1rem">Laporan (opsional)</p>
+  <div class="card" id="laporanSection">
+    <div class="fg">
+      <label for="inPotongan1">Potongan 1</label>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input id="inPotongan1" type="number" min="0" step="0.01" placeholder="cth: 2.5" style="flex:1"/>
+        <span style="font-size:.85rem;font-weight:700;color:var(--muted);white-space:nowrap">KG</span>
       </div>
     </div>
-    <button class="btn-add" id="addBtn">＋&nbsp;Tambah Cacat</button>
+    <div class="fg">
+      <label for="inPotongan2">Potongan 2</label>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input id="inPotongan2" type="number" min="0" step="0.01" placeholder="cth: 1.0" style="flex:1"/>
+        <span style="font-size:.85rem;font-weight:700;color:var(--muted);white-space:nowrap">KG</span>
+      </div>
+    </div>
+    <div class="fg">
+      <label for="inKeteranganVisual">Keterangan Visual</label>
+      <textarea id="inKeteranganVisual" rows="2" placeholder="Deskripsi kondisi visual kain…"></textarea>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label for="inCatatan">Catatan (opsional)</label>
+      <textarea id="inCatatan" rows="2" placeholder="Catatan laporan inspeksi…"></textarea>
+    </div>
+  </div>
+  </div>
+
+  <!-- Ringkasan read-only setelah submit (dimensi + laporan) -->
+  <div id="ringkasanReadonly" style="display:none">
+    <p class="slabel">Ringkasan Inspeksi</p>
+    <div class="dimensi-card">
+      <div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem">
+        <span>📋</span> Ringkasan Lengkap
+      </div>
+      <div id="ringkasanContent"></div>
+    </div>
   </div>
 
   <!-- Summary bar -->
@@ -91,15 +196,18 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
     <div class="sum-box"><div class="sum-val" id="sumCount">0</div><div class="sum-lbl">Cacat</div></div>
     <div class="sum-box"><div class="sum-val" id="sumPts">0</div><div class="sum-lbl">Total Poin</div></div>
     <div class="sum-box"><div class="sum-val" id="sumScore">0.00</div><div class="sum-lbl">Est. Score</div></div>
+    <div class="sum-box"><div class="sum-val" id="sumGrade">—</div><div class="sum-lbl">Est. Grade</div></div>
   </div>
 
   <!-- Defect list -->
-  <p class="slabel">Daftar Cacat</p>
-  <div id="defectList"></div>
+  <div id="standaloneDefectsBlock">
+    <p class="slabel">Daftar Cacat</p>
+    <div id="defectList"></div>
+  </div>
 
   <!-- Submit button -->
   <div id="submitSection" style="margin-top:1rem">
-    <button class="btn-finish" id="finishBtn" disabled>✓&nbsp; Submit Inspeksi</button>
+    <button class="btn-finish" id="finishBtn" disabled>✓&nbsp; Kirim</button>
   </div>
 
   <!-- SUBMITTED: results hero -->
@@ -108,10 +216,10 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
       <div style="font-size:.78rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Hasil Inspeksi</div>
       <div class="rh-result" id="rhResult">—</div>
       <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBar"></div></div>
-      <div class="score-thresh">Batas PASS: 24 poin/100m</div>
+      <div class="score-thresh">Grade A ≤15 · B &gt;15 &lt;20 · BS ≥20</div>
       <div class="rh-grid">
         <div class="rh-box"><div class="rh-val" id="rhPts">—</div><div class="rh-lbl">Total Poin</div></div>
-        <div class="rh-box"><div class="rh-val" id="rhScore">—</div><div class="rh-lbl">Score /100m</div></div>
+        <div class="rh-box"><div class="rh-val" id="rhScore">—</div><div class="rh-lbl">Score</div></div>
       </div>
     </div>
     <!-- Status-specific banner (only one shown at a time) -->
@@ -130,26 +238,40 @@ main{padding:1.1rem;max-width:660px;margin:0 auto;padding-bottom:6rem}
 
 <!-- Confirm modal -->
 <div id="modal">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:400px">
     <h3>Submit Inspeksi?</h3>
-    <p>Pastikan semua cacat telah diinput. Setelah disubmit, data tidak dapat diubah lagi.</p>
+    <p>Pastikan semua cacat telah diinput. Silakan lengkapi data akhir berikut:</p>
+    <div class="fg" style="margin-bottom:.9rem">
+      <label for="modalManualRoll">No. Roll Manual</label>
+      <input id="modalManualRoll" type="number" min="1" step="1" placeholder="cth: 12" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.6rem;font:inherit;color:var(--text);background:var(--surface2)"/>
+    </div>
+    <div class="fg" style="margin-bottom:1.2rem">
+      <label for="modalGrade">Grade Hasil Inspeksi</label>
+      <select id="modalGrade" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.6rem;font:inherit;color:var(--text);background:var(--surface2)">
+        <option value="">— Pilih Grade —</option>
+        <option value="A">Grade A</option>
+        <option value="B">Grade B</option>
+        <option value="BS">Grade BS</option>
+      </select>
+    </div>
     <div class="modal-acts">
       <button class="btn-cancel" id="modalCancel">Batal</button>
-      <button class="btn-confirm" id="modalConfirm">Ya, Submit</button>
+      <button class="btn-confirm" id="modalConfirm">Ya, Kirim</button>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
+<script src="scoring.js"></script>
 <script>
 const BASE = 'http://127.0.0.1:8000/api';
 const token = localStorage.getItem('token');
 if (!token) location.replace('index.html');
 
-// Role guard — hanya operator yang boleh akses halaman ini
+// Role guard — hanya qc yang boleh akses halaman ini
 const _role = localStorage.getItem('role');
-if (_role && _role !== 'operator') {
+if (_role && _role !== 'qc') {
   const _map = { admin: 'admin.html', qc: 'qc.html' };
   location.replace(_map[_role] || 'index.html');
 }
@@ -168,17 +290,43 @@ function isEditableInspection(status) {
 
 // ── Lock / unlock all form inputs ──────────────────────
 function lockForm() {
+  if ($('stLength')) $('stLength').disabled = true;
+  if ($('stGramasi')) $('stGramasi').disabled = true;
+  if ($('stLebar')) $('stLebar').disabled = true;
+  if ($('stKg')) $('stKg').disabled = true;
+  if ($('stMachine')) $('stMachine').disabled = true;
+  if ($('stLot')) $('stLot').disabled = true;
   $('selDefect').disabled = true;
   $('inPos').disabled     = true;
-  $('inNotes').readOnly   = true;
-  $('addBtn').disabled    = true;
+  $('inPosFrom').disabled = true;
+  $('inPosTo').disabled   = true;
+  $('inPotongan1').disabled = true;
+  $('inPotongan2').disabled = true;
+  $('inKeteranganVisual').readOnly = true;
+  $('inCatatan').readOnly = true;
+  if ($('addDepanBtn')) $('addDepanBtn').disabled = true;
+  if ($('addBelakangBtn')) $('addBelakangBtn').disabled = true;
   $('finishBtn').disabled = true;
+  document.querySelectorAll('.btn-pt').forEach(btn => btn.disabled = true);
 }
 function unlockForm() {
+  if ($('stLength')) $('stLength').disabled = false;
+  if ($('stGramasi')) $('stGramasi').disabled = false;
+  if ($('stLebar')) $('stLebar').disabled = false;
+  if ($('stKg')) $('stKg').disabled = false;
+  if ($('stMachine')) $('stMachine').disabled = false;
+  if ($('stLot')) $('stLot').disabled = false;
   $('selDefect').disabled = false;
   $('inPos').disabled     = false;
-  $('inNotes').readOnly   = false;
-  // addBtn and finishBtn re-enabled by renderDefects logic
+  $('inPosFrom').disabled = false;
+  $('inPosTo').disabled   = false;
+  $('inPotongan1').disabled = false;
+  $('inPotongan2').disabled = false;
+  $('inKeteranganVisual').readOnly = false;
+  $('inCatatan').readOnly = false;
+  document.querySelectorAll('.btn-pt').forEach(btn => btn.disabled = false);
+  if ($('addDepanBtn')) $('addDepanBtn').disabled = false;
+  if ($('addBelakangBtn')) $('addBelakangBtn').disabled = false;
 }
 
 // ── Error message mapper ─────────────────────────────
@@ -204,19 +352,65 @@ function toast(msg,cls='',dur=2800){
 async function init(){
   try {
     const id = new URLSearchParams(location.search).get('id') || localStorage.getItem('inspection_id');
-    if(!id){ toast('Tidak ada inspeksi aktif.','err'); setTimeout(()=>location.replace('dashboard.html'),1500); return; }
+    if(!id || id === 'undefined' || id === 'null'){ toast('Tidak ada inspeksi aktif.','err'); setTimeout(()=>location.replace('qc.html'),1500); return; }
 
-    const [insp, types] = await Promise.all([
-      fetch(`${BASE}/operator/inspections/${id}`,{headers:auth()}).then(r=>{
+    const [insp, types, gramasisData] = await Promise.all([
+      fetch(`${BASE}/qc/inspections/${id}`,{headers:auth()}).then(r=>{
         if(r.status===401){localStorage.clear();location.replace('index.html');}
+        if(!r.ok){throw new Error('Failed to load inspection');}
         return r.json();
       }),
-      fetch(`${BASE}/operator/defect-types`,{headers:auth()}).then(r=>r.json())
+      fetch(`${BASE}/qc/defect-types`,{headers:auth()}).then(r=>r.json()),
+      fetch(`${BASE}/qc/gramasis`,{headers:auth()}).then(r=>r.json()).catch(() => [])
     ]);
 
     inspection = insp.data ?? insp;
     defectTypes = Array.isArray(types) ? types : (types.data ?? []);
-    rollLength = parseFloat(inspection.roll?.length_meter ?? 0);
+
+    const gl = gramasisData?.data ?? gramasisData ?? [];
+    if ($('gramasiList')) {
+      $('gramasiList').innerHTML = gl.map(g => `<option value="${esc(g.range)}">${esc(g.range)}</option>`).join('');
+    }
+
+    if (inspection.length_meter !== null && inspection.length_meter !== undefined) {
+      $('stLength').value = parseFloat(inspection.length_meter);
+      rollLength = parseFloat(inspection.length_meter);
+    } else {
+      $('stLength').value = '';
+      rollLength = 0;
+    }
+
+    if (inspection.gramasi !== null && inspection.gramasi !== undefined && inspection.gramasi !== '') {
+      $('stGramasi').value = String(inspection.gramasi);
+    } else {
+      $('stGramasi').value = '';
+    }
+
+    if (inspection.lebar !== null && inspection.lebar !== undefined) {
+      $('stLebar').value = parseFloat(inspection.lebar);
+    } else {
+      $('stLebar').value = '';
+    }
+
+    if (inspection.weight_kg !== null && inspection.weight_kg !== undefined) {
+      $('stKg').value = parseFloat(inspection.weight_kg);
+    } else {
+      $('stKg').value = '';
+    }
+
+    const rollObj = inspection.roll ?? {};
+    if (rollObj.machine?.machine_name !== null && rollObj.machine?.machine_name !== undefined) {
+      $('stMachine').value = rollObj.machine.machine_name;
+    } else {
+      $('stMachine').value = '';
+    }
+    if (rollObj.batch_number !== null && rollObj.batch_number !== undefined) {
+      $('stLot').value = rollObj.batch_number;
+    } else {
+      $('stLot').value = '';
+    }
+
+    populateLaporanFields(inspection);
 
     // defects from nested or separate
     defects = inspection.defects ?? [];
@@ -229,11 +423,124 @@ async function init(){
   } catch(e){
     toast('Gagal memuat data inspeksi. Kembali ke dashboard…','err',3000);
     // Redirect kembali ke dashboard setelah error — jangan biarkan user terjebak di halaman kosong
-    setTimeout(() => location.replace('dashboard.html'), 2500);
+    setTimeout(() => location.replace('qc.html'), 2500);
   } finally {
     $('loader').classList.add('hidden');
     $('mainWrap').style.display='';
   }
+}
+
+const RANGE_POSITION_TYPES = ['patah jarum', 'bopeng'];
+
+function isRangePositionType(name) {
+  return RANGE_POSITION_TYPES.includes(String(name ?? '').trim().toLowerCase());
+}
+
+function defectTypeName(d) {
+  if (d.defect_type?.defect_name) return d.defect_type.defect_name;
+  if (d.defect_type_name) return d.defect_type_name;
+  const t = defectTypes.find(x => Number(x.id) === Number(d.defect_type_id));
+  return t?.defect_name ?? t?.name ?? 'Jenis cacat';
+}
+
+function summaryGridHtml(rows) {
+  return `<div class="ig">${rows.map(([l, v, full]) =>
+    `<div class="ii${full ? ' ii-full' : ''}"><div class="il">${esc(l)}</div><div class="iv"${full ? ' style="white-space:pre-wrap;font-weight:600"' : ''}>${esc(v)}</div></div>`
+  ).join('')}</div>`;
+}
+
+function renderRingkasanReadonly() {
+  const d = inspection ?? {};
+  const r = d.roll ?? {};
+  const req = r.inspection_request ?? r.request ?? {};
+  const qc = req.qc ?? {};
+  const setting = req.setting ?? {};
+
+  const startRows = [
+    ['Shift', shiftLabel(d.shift?.value ?? d.shift)],
+    ['Nama QC', qc.name ?? '—'],
+    ['Lot (Batch)', r.batch_number ?? '—'],
+    ['Mesin', r.machine?.machine_name ?? '—'],
+    ['Berat (KG)', d.weight_kg != null && d.weight_kg !== '' ? `${parseFloat(d.weight_kg).toFixed(2)} KG` : '—'],
+    ['Jenis Benang', d.yarn_name ?? '—'],
+  ];
+  if (setting.setting_name) {
+    startRows.push(['Setting', setting.setting_name]);
+  }
+  if (req.opk) {
+    startRows.push(['OPK', req.opk]);
+  }
+
+  const dimensiRows = [
+    ['Panjang', d.length_meter != null && d.length_meter !== '' ? `${parseFloat(d.length_meter).toFixed(1)} m` : '—'],
+    ['Gramasi', d.gramasi ? `${d.gramasi} g/m²` : '—'],
+    ['Lebar', d.lebar != null && d.lebar !== '' ? `${parseFloat(d.lebar).toFixed(1)} inci` : '—'],
+  ];
+
+  const defectRows = defects.map((df, index) => {
+    const sideLabel = df.side ? (df.side === 'depan' ? 'Depan' : 'Belakang') : '—';
+    const posText = formatDefectPosition(df.position_meter);
+    const tn = defectTypeName(df);
+    const notesText = df.notes ? ` (${df.notes})` : '';
+    return [`Cacat #${index + 1}`, `${tn} · Posisi: ${posText} · Sisi: ${sideLabel}${notesText} · ${df.point} pt` ];
+  });
+
+  const laporanRows = [];
+  if (d.potongan_1_kg != null && d.potongan_1_kg !== '') {
+    laporanRows.push(['Potongan 1', `${parseFloat(d.potongan_1_kg).toFixed(2)} KG`]);
+  }
+  if (d.potongan_2_kg != null && d.potongan_2_kg !== '') {
+    laporanRows.push(['Potongan 2', `${parseFloat(d.potongan_2_kg).toFixed(2)} KG`]);
+  }
+  if (d.keterangan_visual) {
+    laporanRows.push(['Keterangan Visual', d.keterangan_visual, true]);
+  }
+  if (d.catatan) {
+    laporanRows.push(['Catatan', d.catatan, true]);
+  }
+
+  let html = `<div class="summary-part">Data Awal (popup mulai inspeksi)</div>${summaryGridHtml(startRows)}`;
+  html += `<div class="summary-part">Dimensi Hasil Inspeksi</div>${summaryGridHtml(dimensiRows)}`;
+  
+  if (defectRows.length > 0) {
+    html += `<div class="summary-part">Daftar Cacat (${defects.length})</div>${summaryGridHtml(defectRows)}`;
+  } else {
+    html += `<div class="summary-part">Daftar Cacat</div><div style="font-size: .8rem; color: var(--muted); padding: .5rem 1rem;">Tidak ada cacat yang ditemukan.</div>`;
+  }
+
+  if (laporanRows.length) {
+    html += `<div class="summary-part">Laporan</div>${summaryGridHtml(laporanRows)}`;
+  }
+
+  $('ringkasanContent').innerHTML = html;
+}
+
+function formatDefectPosition(pos) {
+  const s = String(pos ?? '');
+  if (/^\d+(\.\d{1,2})?-\d+(\.\d{1,2})?$/.test(s)) {
+    const [from, to] = s.split('-');
+    return `${from} s/d ${to} m`;
+  }
+  return `${s} m`;
+}
+
+function parsePositionRange(fromVal, toVal) {
+  const from = parseFloat(fromVal);
+  const to = parseFloat(toVal);
+  if (isNaN(from) || isNaN(to) || from <= 0 || to <= 0 || from > to) return null;
+  return `${from}-${to}`;
+}
+
+function updatePositionInputMode() {
+  const opt = $('selDefect').selectedOptions[0];
+  const isRange = opt?.value && isRangePositionType(opt.textContent);
+  $('posSingleWrap').style.display = isRange ? 'none' : '';
+  $('posRangeWrap').style.display = isRange ? '' : 'none';
+  $('pointRangeNote').style.display = isRange ? '' : 'none';
+  $('pointWrap').style.display = '';
+  const hint = rollLength ? `(maks. ${rollLength} m)` : '';
+  $('posHint').textContent = hint;
+  $('posRangeHint').textContent = hint;
 }
 
 function buildDefectTypeOptions(){
@@ -241,8 +548,10 @@ function buildDefectTypeOptions(){
   sel.innerHTML='<option value="">— Pilih jenis cacat —</option>';
   defectTypes.forEach(t=>{
     const o=document.createElement('option');
+    const name = t.defect_name ?? t.name;
     o.value=t.id; o.dataset.point=t.default_point??1;
-    o.textContent=t.defect_name??t.name;
+    if (isRangePositionType(name)) o.dataset.rangePos = '1';
+    o.textContent=name;
     sel.appendChild(o);
   });
 }
@@ -254,83 +563,126 @@ function renderHeader(){
   $('hMachine').textContent = roll.machine?.machine_name ?? '';
   const pill = $('hStatusPill');
   const pillMap = {
-    IN_PROGRESS: ['sp-ip',  'IN PROGRESS'],
-    SUBMITTED:   ['sp-sub', 'SUBMITTED'],
-    VALIDATED:   ['sp-val', 'VALIDATED'],
-    REJECTED:    ['sp-rej', 'REJECTED'],
+    IN_PROGRESS:  ['sp-ip',  'IN PROGRESS'],
+    QC_VALIDATED: ['sp-sub', 'VALIDASI QC'],
+    RELEASED:     ['sp-val', 'RILIS'],
+    PENDING:      ['sp-rej', 'RE-INSPEKSI'],
   };
   const [cls, label] = pillMap[st] ?? ['sp-ip', st || 'IN PROGRESS'];
   pill.className = `spill ${cls}`;
   pill.textContent = label;
 }
 
+function shiftLabel(s){
+  const map={pagi:'Pagi',siang:'Siang',malam:'Malam'};
+  return map[(s||'').toLowerCase()] ?? (s||'—');
+}
+
 function renderRollStrip(){
   const r = inspection.roll ?? {};
-  const m = r.machine?.machine_name ?? '—';
+  const req = r.request ?? r.inspection_request ?? {};
+  const yarn = req.yarn_type?.yarn_name ?? '—';
+  const setting = req.setting?.setting_name ?? '—';
+  const op = r.assigned_operator?.name ?? r.operator?.name ?? '—';
+  const notes = req.notes ?? '—';
+
   const items = [
     ['Roll Code', r.roll_code??'—'],
-    ['Panjang', (parseFloat(r.length_meter??0).toFixed(0))+' m'],
-    ['Batch', r.batch_number??'—'],
-    ['Mesin', m],
+    ['Shift', shiftLabel(inspection.shift?.value ?? inspection.shift)],
+    ['KG', (parseFloat(inspection.weight_kg??0).toFixed(2))],
+    ['OPK', req.opk??'—'],
+    ['Req. Benang', yarn],
+    ['Req. Setting', setting],
+    ['Op. Produksi', op],
+    ['Req. Gramasi', req.gramasi??'—'],
   ];
-  $('rollStrip').innerHTML = items.map(([l,v])=>
+
+  let html = items.map(([l,v])=>
     `<div><div class="ri-label">${esc(l)}</div><div class="ri-val">${esc(v)}</div></div>`
   ).join('');
+
+  if (notes && notes !== '—') {
+    html += `<div style="grid-column: span 2"><div class="ri-label">Catatan Admin</div><div class="ri-val" style="white-space: pre-wrap; font-size: .8rem; font-weight: 500; margin-top: .1rem; color: var(--text);">${esc(notes)}</div></div>`;
+  }
+
+  $('rollStrip').innerHTML = html;
 }
 
 function renderState(){
   const st = (inspection.status||'').toUpperCase();
 
-  // SUBMITTED, VALIDATED, REJECTED → read-only (hide form & submit btn, show result)
-  if(st === 'SUBMITTED' || st === 'VALIDATED' || st === 'REJECTED'){
+  // QC_VALIDATED, RELEASED → read-only (hide form & submit btn, show result)
+  if(st === 'QC_VALIDATED' || st === 'RELEASED'){
     $('formSection').style.display   = 'none';
     $('submitSection').style.display = 'none';
+    $('laporanBlock').style.display  = 'none';
+    $('standaloneDefectsBlock').style.display = 'none';
+    $('ringkasanReadonly').style.display = '';
+    renderRingkasanReadonly();
+    lockForm();
     $('resultSection').style.display = '';
-
+    
     // Banner logic
     $('bannerSubmitted').style.display = 'none';
     $('bannerValidated').style.display = 'none';
     $('bannerRejected').style.display  = 'none';
 
-    if (st === 'SUBMITTED') {
+    if (st === 'QC_VALIDATED') {
+      $('bannerSubmitted').textContent = '⏳  Menunggu Rilis Admin';
       $('bannerSubmitted').style.display = 'flex';
-    } else if (st === 'VALIDATED') {
+    } else if (st === 'RELEASED') {
+      $('bannerValidated').querySelector('strong').textContent = 'Kain Dirilis';
+      $('bannerValidated').querySelector('span').textContent = 'Roll ini telah divalidasi dan dirilis ke customer.';
       $('bannerValidated').style.display = 'flex';
-    } else if (st === 'REJECTED') {
-      const reason = inspection.rejection_reason ?? inspection.reject_reason ?? '';
-      $('rejectedReason').textContent = reason
-        ? `Alasan: ${reason}`
-        : 'Roll akan dikembalikan ke antrian inspeksi.';
-      $('bannerRejected').style.display = 'flex';
     }
 
     renderResults();
+    updateSummary();
   } else {
-    // IN_PROGRESS → editable
+    // IN_PROGRESS or PENDING → editable
     $('formSection').style.display   = '';
     $('submitSection').style.display = '';
+    $('laporanBlock').style.display  = '';
+    $('standaloneDefectsBlock').style.display = '';
+    $('ringkasanReadonly').style.display = 'none';
+    unlockForm();
     $('resultSection').style.display = 'none';
-    $('inPos').max = rollLength;
-    $('posHint').textContent = rollLength ? `(maks. ${rollLength} m)` : '';
+    if (rollLength) {
+      $('inPos').max = rollLength;
+      $('inPosFrom').max = rollLength;
+      $('inPosTo').max = rollLength;
+    } else {
+      $('inPos').removeAttribute('max');
+      $('inPosFrom').removeAttribute('max');
+      $('inPosTo').removeAttribute('max');
+    }
+    updatePositionInputMode();
+
+    // Reinspection Alert banner if status is PENDING
+    if (st === 'PENDING') {
+      const reason = inspection.rejection_reason ?? inspection.reject_reason ?? '';
+      $('reinspectionReason').textContent = reason ? `Alasan: ${reason}` : 'Admin meminta inspeksi ulang untuk roll ini.';
+      $('reinspectionAlert').style.display = 'flex';
+    } else {
+      $('reinspectionAlert').style.display = 'none';
+    }
   }
   renderDefects();
 }
 
 function renderResults(){
-  const res = (inspection.result||'').toUpperCase();
+  const grade = (inspection.result||'').toUpperCase();
   const pts = inspection.total_points ?? 0;
   const score = parseFloat(inspection.score ?? 0);
 
-  $('rhResult').textContent = res || '—';
-  $('rhResult').className = `rh-result ${res}`;
+  $('rhResult').textContent = grade || '—';
+  $('rhResult').className = `rh-result ${grade}`;
   $('rhPts').textContent = pts;
   $('rhScore').textContent = score.toFixed(2);
 
-  // Score bar: capped at 48 for visual (2× threshold)
-  const pct = Math.min(100, (score / 48) * 100);
   const bar = $('scoreBar');
-  bar.style.width = pct+'%';
-  bar.style.background = res==='PASS' ? 'var(--ok)' : 'var(--er)';
+  bar.style.width = gradeBarPercent(score)+'%';
+  bar.style.background = gradeBarColor(grade);
 }
 
 function renderDefects(){
@@ -347,13 +699,21 @@ function renderDefects(){
 
   container.innerHTML='';
   [...defects].reverse().forEach(d=>{
-    const typeName = d.defect_type?.defect_name ?? d.defect_type_name ?? `#${d.defect_type_id}`;
+    const typeName = defectTypeName(d);
+    let sideText = '';
+    if (d.side) {
+      if (d.side === 'depan') {
+        sideText = `<span style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:var(--accent-light);color:var(--accent);padding:.15rem .4rem;border-radius:4px;margin-right:.45rem;display:inline-block;vertical-align:middle;">Depan</span>`;
+      } else if (d.side === 'belakang') {
+        sideText = `<span style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:rgba(225,29,72,.1);color:#e11d48;padding:.15rem .4rem;border-radius:4px;margin-right:.45rem;display:inline-block;vertical-align:middle;">Belakang</span>`;
+      }
+    }
     const div=document.createElement('div'); div.className='defect-row';
     div.innerHTML=`
       <div class="d-dot"></div>
       <div class="d-info">
-        <div class="d-name">${esc(typeName)}</div>
-        <div class="d-meta">Posisi: ${esc(d.position_meter)} m${d.notes?` · ${esc(d.notes)}`:''}</div>
+        <div class="d-name">${sideText}${esc(typeName)}</div>
+        <div class="d-meta">Posisi: ${esc(formatDefectPosition(d.position_meter))}${d.notes?` · ${esc(d.notes)}`:''}</div>
       </div>
       <div class="d-pt">${esc(d.point)} pt</div>`;
     container.appendChild(div);
@@ -365,23 +725,52 @@ function renderDefects(){
 function updateSummary(){
   const cnt = defects.length;
   const pts = defects.reduce((s,d)=>s+(Number(d.point)||0),0);
-  const score = rollLength>0 ? (pts/rollLength)*100 : 0;
+  const lebar = parseFloat($('stLebar')?.value) || 0;
+  const score = calcInspectionScore(pts, rollLength, lebar);
+  const grade = calcInspectionGrade(score);
   $('sumCount').textContent=cnt;
   $('sumPts').textContent=pts;
   $('sumScore').textContent=score.toFixed(2);
+  $('sumGrade').textContent=grade || '—';
 }
 
-// ── Defect type → auto point ─────────────────────────────
+// ── Defect type → auto point + posisi range ───────────────
 $('selDefect').addEventListener('change',()=>{
   const opt=$('selDefect').selectedOptions[0];
   const pt = opt?.dataset.point;
-  $('pointDisplay').innerHTML = pt
-    ? `<span style="color:#a5b4fc;font-size:1.1rem">${esc(pt)}</span>&nbsp;poin`
-    : '— Pilih jenis cacat dahulu';
+
+  document.querySelectorAll('.btn-pt').forEach(btn => btn.classList.remove('active'));
+  $('inPoint').value = '';
+  $('inPos').value = '';
+  $('inPosFrom').value = '';
+  $('inPosTo').value = '';
+  updatePositionInputMode();
+
+  if (pt) {
+    const btn = document.querySelector(`.btn-pt[data-point="${pt}"]`);
+    if (btn) {
+      btn.classList.add('active');
+      $('inPoint').value = pt;
+    }
+  }
+});
+
+// ── Manual point selection override ────────────────────────
+document.querySelectorAll('.btn-pt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Only allow changing if a defect type is selected
+    if (!$('selDefect').value) {
+      toast('Pilih jenis cacat dahulu.', 'err');
+      return;
+    }
+    document.querySelectorAll('.btn-pt').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    $('inPoint').value = btn.dataset.point;
+  });
 });
 
 // ── Add defect ───────────────────────────────────────────
-async function addDefect() {
+async function addDefect(side) {
   // ★ Defensive guard: JS-level state check (tahan DevTools abuse)
   if (!isEditableInspection(inspection?.status)) {
     toast('Inspection is locked.', 'err');
@@ -391,23 +780,41 @@ async function addDefect() {
 
   const opt = $('selDefect').selectedOptions[0];
   const defectTypeId = Number($('selDefect').value);
-  const pos   = parseFloat($('inPos').value);
-  const point = Number(opt?.dataset.point ?? 0);
-  const notes = $('inNotes').value.trim();
+  const isRange = isRangePositionType(opt?.textContent);
+  let pos;
+  if (isRange) {
+    pos = parsePositionRange($('inPosFrom').value, $('inPosTo').value);
+    if (!pos) {
+      toast('Isi posisi dari–sampai meter (awal ≤ akhir, > 0).', 'err');
+      return;
+    }
+    const [from, to] = pos.split('-').map(Number);
+    if (rollLength && (from > rollLength || to > rollLength)) {
+      toast(`Posisi maks. ${rollLength} m.`, 'err');
+      return;
+    }
+  } else {
+    const single = parseFloat($('inPos').value);
+    if (!single || single <= 0) { toast('Posisi harus lebih dari 0.', 'err'); return; }
+    if (rollLength && single > rollLength) { toast(`Posisi maks. ${rollLength} m.`, 'err'); return; }
+    pos = single;
+  }
+  const point = Number($('inPoint').value);
 
   if (!defectTypeId) { toast('Pilih jenis cacat.', 'err'); return; }
-  if (!pos || pos <= 0) { toast('Posisi harus lebih dari 0.', 'err'); return; }
-  if (rollLength && pos > rollLength) { toast(`Posisi maks. ${rollLength} m.`, 'err'); return; }
-  if (!point) { toast('Jenis cacat tidak memiliki nilai poin.', 'err'); return; }
+  if (!point) { toast('Tentukan nilai poin cacat (1-4).', 'err'); return; }
 
-  const btn = $('addBtn');
+  const btn = side === 'depan' ? $('addDepanBtn') : $('addBelakangBtn');
+  const otherBtn = side === 'depan' ? $('addBelakangBtn') : $('addDepanBtn');
   btn.disabled = true;
+  otherBtn.disabled = true;
+  const originalText = btn.innerHTML;
   btn.innerHTML = '<span class="spinner"></span>&nbsp;Menambah…';
 
   try {
-    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}/defects`, {
+    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}/defects`, {
       method: 'POST', headers: auth(),
-      body: JSON.stringify({ defect_type_id: defectTypeId, position_meter: pos, point, notes: notes || null })
+      body: JSON.stringify({ defect_type_id: defectTypeId, position_meter: pos, point, side })
     });
     const data = await res.json();
 
@@ -424,19 +831,118 @@ async function addDefect() {
 
     const newDefect = data.data ?? data;
     newDefect.defect_type_name = opt.textContent;
+    newDefect.side = side;
     defects.push(newDefect);
+    
+    // Reset form fields
     $('inPos').value = '';
-    $('inNotes').value = '';
+    $('inPosFrom').value = '';
+    $('inPosTo').value = '';
+    $('selDefect').value = '';
+    document.querySelectorAll('.btn-pt').forEach(b => b.classList.remove('active'));
+    $('inPoint').value = '';
+    
     renderDefects();
     toast('Cacat berhasil ditambahkan.', 'ok');
   } catch (_) {
     toast('Network error. Periksa koneksi Anda.', 'err');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '＋&nbsp;Tambah Cacat';
+    otherBtn.disabled = false;
+    btn.innerHTML = originalText;
   }
 }
-$('addBtn').addEventListener('click', addDefect);
+$('addDepanBtn').addEventListener('click', () => addDefect('depan'));
+$('addBelakangBtn').addEventListener('click', () => addDefect('belakang'));
+
+$('stLength').addEventListener('input', () => {
+  const val = parseFloat($('stLength').value);
+  if (!isNaN(val) && val > 0) {
+    rollLength = val;
+    if (rollLength) {
+      $('inPos').max = rollLength;
+      $('inPosFrom').max = rollLength;
+      $('inPosTo').max = rollLength;
+    } else {
+      $('inPos').removeAttribute('max');
+      $('inPosFrom').removeAttribute('max');
+      $('inPosTo').removeAttribute('max');
+    }
+    updatePositionInputMode();
+  } else {
+    rollLength = 0;
+    $('inPos').removeAttribute('max');
+    $('inPosFrom').removeAttribute('max');
+    $('inPosTo').removeAttribute('max');
+    updatePositionInputMode();
+  }
+  updateSummary();
+});
+$('stLebar').addEventListener('input', updateSummary);
+$('stKg').addEventListener('input', () => {
+  const kgVal = parseFloat($('stKg').value);
+  if (!isNaN(kgVal) && kgVal > 0) {
+    inspection.weight_kg = kgVal;
+  } else {
+    inspection.weight_kg = 0;
+  }
+  renderRollStrip();
+  updateSummary();
+});
+$('stMachine').addEventListener('input', () => {
+  const machineVal = $('stMachine').value.trim();
+  if (inspection.roll) {
+    if (!inspection.roll.machine) {
+      inspection.roll.machine = {};
+    }
+    inspection.roll.machine.machine_name = machineVal;
+  }
+  $('hMachine').textContent = machineVal;
+});
+$('stLot').addEventListener('input', () => {
+  const lotVal = $('stLot').value.trim();
+  if (inspection.roll) {
+    inspection.roll.batch_number = lotVal;
+  }
+});
+
+/** @returns {string|null} normalized "min-max" or null if invalid */
+function populateLaporanFields(data) {
+  const d = data ?? inspection ?? {};
+  $('inPotongan1').value = d.potongan_1_kg != null && d.potongan_1_kg !== '' ? parseFloat(d.potongan_1_kg) : '';
+  $('inPotongan2').value = d.potongan_2_kg != null && d.potongan_2_kg !== '' ? parseFloat(d.potongan_2_kg) : '';
+  $('inKeteranganVisual').value = d.keterangan_visual ?? '';
+  $('inCatatan').value = d.catatan ?? '';
+}
+
+function laporanPayload() {
+  const payload = {};
+  const potongan1Raw = $('inPotongan1').value.trim();
+  if (potongan1Raw !== '') {
+    const v = parseFloat(potongan1Raw);
+    if (!isNaN(v) && v >= 0) payload.potongan_1_kg = v;
+  }
+  const potongan2Raw = $('inPotongan2').value.trim();
+  if (potongan2Raw !== '') {
+    const v = parseFloat(potongan2Raw);
+    if (!isNaN(v) && v >= 0) payload.potongan_2_kg = v;
+  }
+  const ket = $('inKeteranganVisual').value.trim();
+  if (ket) payload.keterangan_visual = ket;
+  const cat = $('inCatatan').value.trim();
+  if (cat) payload.catatan = cat;
+  return payload;
+}
+
+function parseGramasiRange(raw) {
+  const s = String(raw ?? '').trim().replace(/\s+/g, '');
+  const m = s.match(/^(\d+(?:\.\d{1,2})?)-(\d+(?:\.\d{1,2})?)$/);
+  if (!m) return null;
+  const min = parseFloat(m[1]);
+  const max = parseFloat(m[2]);
+  if (min < 1 || max > 9999 || min > max) return null;
+  return `${m[1]}-${m[2]}`;
+}
 
 // ── Submit inspection (defensive) ───────────────────────
 async function submitInspection() {
@@ -445,6 +951,55 @@ async function submitInspection() {
     toast('Inspection is locked.', 'err'); return;
   }
   if (submitting) return;
+
+  const lengthVal = parseFloat($('stLength').value);
+  const gramasiVal = parseGramasiRange($('stGramasi').value);
+  const lebarVal = parseFloat($('stLebar').value);
+  const kgVal = parseFloat($('stKg').value);
+  const machineVal = $('stMachine').value.trim();
+  const lotVal = $('stLot').value.trim();
+
+  const manualRollVal = $('modalManualRoll').value.trim();
+  const gradeVal = $('modalGrade').value;
+
+  if (isNaN(lengthVal) || lengthVal < 0.1 || lengthVal > 9999) {
+    toast('Panjang kain wajib diisi (antara 0.1 - 9999 meter).', 'err');
+    return;
+  }
+  if (!gramasiVal) {
+    toast('Gramasi wajib format range (contoh: 145-150, min ≤ maks, 1-9999).', 'err');
+    return;
+  }
+  if (isNaN(lebarVal) || lebarVal < 1 || lebarVal > 9999) {
+    toast('Lebar wajib diisi (antara 1 - 9999 inci).', 'err');
+    return;
+  }
+  if (isNaN(kgVal) || kgVal < 0.01 || kgVal > 99999) {
+    toast('Berat (KG) wajib diisi (minimal 0.01).', 'err');
+    return;
+  }
+  if (!machineVal) {
+    toast('Nama mesin wajib diisi.', 'err');
+    return;
+  }
+  if (!lotVal) {
+    toast('Lot (Batch) wajib diisi.', 'err');
+    return;
+  }
+
+  if (manualRollVal !== '') {
+    const rInt = parseInt(manualRollVal);
+    if (isNaN(rInt) || rInt < 1) {
+      toast('No. Roll Manual harus berupa angka positif.', 'err');
+      return;
+    }
+  }
+
+  if (!gradeVal) {
+    toast('Grade Hasil Inspeksi wajib dipilih.', 'err');
+    return;
+  }
+
   if (defects.length === 0) { toast('Tambahkan minimal 1 cacat sebelum submit.', 'err'); return; }
 
   submitting = true;
@@ -453,8 +1008,19 @@ async function submitInspection() {
   $('finishBtn').innerHTML = '<span class="spinner"></span>&nbsp;Mengirim…';
 
   try {
-    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}/finish`, {
-      method: 'POST', headers: auth()
+    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}/finish`, {
+      method: 'POST', headers: auth(),
+      body: JSON.stringify({
+        length_meter: lengthVal,
+        gramasi: gramasiVal,
+        lebar: lebarVal,
+        weight_kg: kgVal,
+        machine_name: machineVal,
+        batch_number: lotVal,
+        manual_roll_number: manualRollVal !== '' ? parseInt(manualRollVal) : null,
+        result: gradeVal,
+        ...laporanPayload(),
+      })
     });
     const data = await res.json();
 
@@ -468,7 +1034,7 @@ async function submitInspection() {
       toast(apiErrorMsg(data, res.status, 'Unable to submit inspection.'), 'err');
       submitting = false;
       $('finishBtn').disabled = false;
-      $('finishBtn').innerHTML = '✓&nbsp; Submit Inspeksi';
+      $('finishBtn').innerHTML = '✓&nbsp; Kirim';
       return;
     }
     inspection = data.data ?? data;
@@ -478,16 +1044,47 @@ async function submitInspection() {
     toast('Inspeksi berhasil disubmit!', 'ok', 3000);
     renderHeader();
     renderState();
+    setTimeout(() => {
+      location.replace('qc.html#HISTORY');
+    }, 1500);
   } catch (_) {
     toast('Network error. Periksa koneksi Anda.', 'err');
     submitting = false;
     $('finishBtn').disabled = false;
-    $('finishBtn').innerHTML = '✓&nbsp; Submit Inspeksi';
+    $('finishBtn').innerHTML = '✓&nbsp; Kirim';
   }
 }
 
 $('finishBtn').addEventListener('click', () => {
   if (submitting || defects.length === 0) return;
+
+  const lengthVal = parseFloat($('stLength').value);
+  const gramasiVal = parseGramasiRange($('stGramasi').value);
+  const lebarVal = parseFloat($('stLebar').value);
+  const kgVal = parseFloat($('stKg').value);
+  const machineVal = $('stMachine').value.trim();
+
+  if (isNaN(lengthVal) || lengthVal < 0.1 || lengthVal > 9999) {
+    toast('Panjang kain wajib diisi (antara 0.1 - 9999 meter).', 'err');
+    return;
+  }
+  if (!gramasiVal) {
+    toast('Gramasi wajib format range (contoh: 145-150, min ≤ maks, 1-9999).', 'err');
+    return;
+  }
+  if (isNaN(lebarVal) || lebarVal < 1 || lebarVal > 9999) {
+    toast('Lebar wajib diisi (antara 1 - 9999 inci).', 'err');
+    return;
+  }
+  if (isNaN(kgVal) || kgVal < 0.01 || kgVal > 99999) {
+    toast('Berat (KG) wajib diisi (minimal 0.01).', 'err');
+    return;
+  }
+  if (!machineVal) {
+    toast('Nama mesin wajib diisi.', 'err');
+    return;
+  }
+
   $('modal').classList.add('show');
 });
 $('modalCancel').addEventListener('click',  () => $('modal').classList.remove('show'));
@@ -497,7 +1094,7 @@ $('modalConfirm').addEventListener('click', submitInspection);
 async function silentRefresh() {
   if (!inspection?.id) return;
   try {
-    const res  = await fetch(`${BASE}/operator/inspections/${inspection.id}`, { headers: auth() });
+    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}`, { headers: auth() });
     if (res.status === 401) { localStorage.clear(); location.replace('index.html'); return; }
     if (!res.ok) return;
     const data   = await res.json();
@@ -511,7 +1108,7 @@ async function silentRefresh() {
       renderHeader();
       renderState();
     }
-    if (['VALIDATED','REJECTED'].includes(newSt)) stopPolling();
+    if (['RELEASED','PENDING'].includes(newSt)) stopPolling();
   } catch (_) { /* silent */ }
 }
 
@@ -520,13 +1117,13 @@ function startPolling() { stopPolling(); pollTimer = setInterval(silentRefresh, 
 function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
 // ── Back ─────────────────────────────────────────────────
-$('backBtn').addEventListener('click', () => { stopPolling(); location.href = 'dashboard.html'; });
+$('backBtn').addEventListener('click', () => { stopPolling(); location.href = 'qc.html'; });
 
 // ── Init ─────────────────────────────────────────────────
 async function initThenPoll() {
   await init();
   const st = (inspection?.status || '').toUpperCase();
-  if (!['VALIDATED','REJECTED'].includes(st)) startPolling();
+  if (st === 'QC_VALIDATED') startPolling();
   if (!isEditableInspection(st)) lockForm();
 }
 initThenPoll();

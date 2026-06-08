@@ -22,6 +22,7 @@ class DefectTypeController extends Controller
     {
         $data = $request->validate([
             'defect_name'   => ['required', 'string', 'max:100', 'unique:defect_types,defect_name'],
+            'category'      => ['nullable', 'string', 'max:50'],
             'default_point' => ['required', 'integer', 'min:1', 'max:4'],
             'description'   => ['nullable', 'string'],
         ]);
@@ -55,6 +56,7 @@ class DefectTypeController extends Controller
     {
         $data = $request->validate([
             'defect_name'   => ['sometimes', 'string', 'max:100', "unique:defect_types,defect_name,{$defectType->id}"],
+            'category'      => ['nullable', 'string', 'max:50'],
             'default_point' => ['sometimes', 'integer', 'min:1', 'max:4'],
             'description'   => ['nullable', 'string'],
         ]);

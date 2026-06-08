@@ -16,7 +16,7 @@ class AnalyticsController extends Controller
         return $request->only([
             'date_from', 'date_to',
             'machine_id', 'client_id', 'operator_id', 'qc_id',
-            'result', 'status', 'days',
+            'result', 'status', 'days', 'opk',
         ]);
     }
 
@@ -64,9 +64,9 @@ class AnalyticsController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
             fputcsv($out, [
-                'ID', 'Roll Code', 'Client', 'Machine', 'Batch',
+                'ID', 'Roll Code', 'Client', 'Machine', 'OPK',
                 'Operator', 'QC Validator', 'Total Points', 'Score',
-                'Result', 'Status', 'Start Time', 'End Time', 'Created At',
+                'Grade', 'Status', 'Start Time', 'End Time', 'Created At',
             ]);
             foreach ($rows as $i) {
                 $status = $i->status instanceof \BackedEnum ? $i->status->value : (string) $i->status;
@@ -75,7 +75,7 @@ class AnalyticsController extends Controller
                     $i->roll->roll_code          ?? '-',
                     $i->roll->inspectionRequest->client->client_name ?? '-',
                     $i->roll->machine->machine_name ?? '-',
-                    $i->roll->batch_number       ?? '-',
+                    $i->roll->inspectionRequest->opk ?? '-',
                     $i->operator->name            ?? '-',
                     $i->validator->name           ?? '-',
                     $i->total_points              ?? 0,

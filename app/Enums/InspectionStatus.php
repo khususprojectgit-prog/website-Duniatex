@@ -4,10 +4,12 @@ namespace App\Enums;
 
 enum InspectionStatus: string
 {
-    case IN_PROGRESS = 'IN_PROGRESS';
-    case SUBMITTED   = 'SUBMITTED';
-    case VALIDATED   = 'VALIDATED';
-    case REJECTED    = 'REJECTED';
+    case IN_PROGRESS  = 'IN_PROGRESS';
+    case SUBMITTED    = 'SUBMITTED';
+    case VALIDATED    = 'VALIDATED';
+    case REJECTED     = 'REJECTED';
+    case QC_VALIDATED = 'QC_VALIDATED';
+    case RELEASED     = 'RELEASED';
 
     /** States from which the inspection can be edited (defects added). */
     public function isEditable(): bool
@@ -15,28 +17,31 @@ enum InspectionStatus: string
         return $this === self::IN_PROGRESS;
     }
 
-    /** States where no further QC action is possible. */
+    /** States where no further QC/Admin action is possible. */
     public function isFinal(): bool
     {
         return match ($this) {
-            self::VALIDATED, self::REJECTED => true,
-            default                         => false,
+            self::RELEASED, self::REJECTED, self::VALIDATED => true,
+            default                                         => false,
         };
     }
 
-    /** States where QC can validate or reject. */
+    /** States where QC/Admin can validate or reject. */
     public function isActionable(): bool
     {
-        return $this === self::SUBMITTED;
+        return $this === self::QC_VALIDATED;
     }
 
     /** Valid next states from this state. */
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::IN_PROGRESS => [self::SUBMITTED],
-            self::SUBMITTED   => [self::VALIDATED, self::REJECTED],
-            default           => [],
+            self::IN_PROGRESS  => [self::QC_VALIDATED],
+            self::QC_VALIDATED => [self::RELEASED, self::REJECTED],
+            self::RELEASED     => [],
+            self::REJECTED     => [],
+            self::SUBMITTED    => [self::VALIDATED, self::REJECTED],
+            self::VALIDATED    => [self::RELEASED],
         };
     }
 }

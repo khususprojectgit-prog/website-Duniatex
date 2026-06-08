@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InspectionStatus;
+use App\Enums\Shift;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,7 +12,9 @@ class Inspection extends Model
     use HasFactory;
 
     protected $fillable = [
-        'roll_id', 'operator_id', 'start_time', 'end_time',
+        'roll_id', 'manual_roll_number', 'operator_id', 'shift', 'length_meter', 'weight_kg', 'gramasi', 'lebar',
+        'potongan_1_kg', 'potongan_2_kg', 'keterangan_visual', 'catatan', 'yarn_name',
+        'start_time', 'end_time',
         'total_points', 'score', 'result', 'status',
         'validated_by', 'validated_at', 'rejection_reason',
     ];
@@ -22,7 +25,13 @@ class Inspection extends Model
             'start_time'   => 'datetime',
             'end_time'     => 'datetime',
             'validated_at' => 'datetime',
+            'length_meter' => 'decimal:2',
+            'weight_kg'    => 'decimal:2',
+            'lebar'        => 'decimal:2',
+            'potongan_1_kg' => 'decimal:2',
+            'potongan_2_kg' => 'decimal:2',
             'score'        => 'decimal:2',
+            'shift'        => Shift::class,
             'status'       => InspectionStatus::class,
         ];
     }
@@ -43,10 +52,10 @@ class Inspection extends Model
         return $this->status->isFinal();
     }
 
-    /** QC can validate or reject only SUBMITTED inspections. */
+    /** QC/Admin can validate or reject only QC_VALIDATED inspections. */
     public function isActionable(): bool
     {
-        return $this->status === InspectionStatus::SUBMITTED;
+        return $this->status === InspectionStatus::QC_VALIDATED;
     }
 
     // -----------------------------------------------------------------------

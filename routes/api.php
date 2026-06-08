@@ -47,6 +47,15 @@ Route::middleware('auth:sanctum')->group(function () {
         // Defect types
         Route::apiResource('defect-types', Admin\DefectTypeController::class);
 
+        // Yarn types
+        Route::apiResource('yarn-types', Admin\YarnTypeController::class);
+
+        // Settings (Master Setting)
+        Route::apiResource('settings', Admin\SettingController::class);
+
+        // Gramasis (Master Gramasi)
+        Route::apiResource('gramasis', Admin\GramasiController::class);
+
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('summary',              [Admin\ReportController::class, 'summary']);
@@ -59,9 +68,17 @@ Route::middleware('auth:sanctum')->group(function () {
         // Inspection Requests (admin orchestration — creates + lists with auto roll generation)
         Route::get( 'inspection-requests', [Admin\InspectionRequestController::class, 'index']);
         Route::post('inspection-requests', [Admin\InspectionRequestController::class, 'store']);
+        Route::put( 'inspection-requests/{inspectionRequest}', [Admin\InspectionRequestController::class, 'update']);
 
-        // Fabric Rolls (admin monitoring — read only)
+        // Fabric Rolls (admin monitoring + reassign)
         Route::get('fabric-rolls', [Admin\FabricRollController::class, 'index']);
+        Route::patch('fabric-rolls/{fabricRoll}/reassign', [Admin\FabricRollController::class, 'reassign']);
+
+        // Inspections Checker Actions
+        Route::get( 'inspections/pending-release', [Admin\InspectionController::class, 'pendingRelease']);
+        Route::get( 'inspections/released',        [Admin\InspectionController::class, 'released']);
+        Route::post('inspections/{inspection}/release', [Admin\InspectionController::class, 'release']);
+        Route::post('inspections/{inspection}/reject',  [Admin\InspectionController::class, 'reject']);
 
         // Analytics (read-only aggregations)
         Route::prefix('analytics')->name('analytics.')->group(function () {
@@ -75,7 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // -------------------------------------------------------------------
-    // QC routes
+    // QC (Shared View & Management) routes
     // -------------------------------------------------------------------
     Route::middleware('role:qc,admin')->prefix('qc')->name('qc.')->group(function () {
 
@@ -91,14 +108,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put(   'rolls/{fabricRoll}', [QC\FabricRollController::class, 'update']);
         Route::delete('rolls/{fabricRoll}', [QC\FabricRollController::class, 'destroy']);
 
-        // Inspection validation
-        Route::get('inspections',                             [QC\ValidationController::class, 'index']);
-        Route::get('inspections/{inspection}',                [QC\ValidationController::class, 'show']);
-        Route::post('inspections/{inspection}/validate',      [QC\ValidationController::class, 'validate']);
-        Route::post('inspections/{inspection}/reject',        [QC\ValidationController::class, 'reject']);
-
         // Machine issues
         Route::apiResource('machine-issues', QC\MachineIssueController::class);
+
+        // Potongan
+        Route::get('potongan', [QC\PotonganController::class, 'index']);
+
+        // Machine Monitoring
+        Route::get('machines/monitoring', [QC\MachineMonitoringController::class, 'index']);
 
         // QC reports
         Route::prefix('reports')->name('reports.')->group(function () {
@@ -109,23 +126,25 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // -------------------------------------------------------------------
-    // Timeline — accessible to any authenticated role
-    // Authorization (operator = own inspection only) handled in controller
+    // Timeline & Details — accessible to any authenticated role
     // -------------------------------------------------------------------
+    Route::get('/inspections/{inspection}',          [QC\ValidationController::class, 'show'])
+         ->name('inspections.show');
     Route::get('/inspections/{inspection}/timeline', [TimelineController::class, 'show'])
          ->name('inspections.timeline');
 
     // -------------------------------------------------------------------
-    // Operator routes
+    // QC Inspector (Inspection Execution) routes
     // -------------------------------------------------------------------
-    Route::middleware('role:operator')->prefix('operator')->name('operator.')->group(function () {
+    Route::middleware('role:qc')->prefix('qc')->name('qc.')->group(function () {
 
         // Available rolls to inspect
-        Route::get('rolls',                    [Operator\OperatorInspectionController::class, 'availableRolls']);
+        Route::get('my-rolls',                  [Operator\OperatorInspectionController::class, 'availableRolls']);
         Route::post('rolls/{fabricRoll}/start', [Operator\OperatorInspectionController::class, 'start']);
 
         // Own inspections
-        Route::get('inspections',                           [Operator\OperatorInspectionController::class, 'myInspections']);
+        Route::get('my-inspections',                        [Operator\OperatorInspectionController::class, 'myInspections']);
+        Route::get('my-inspections/{inspection}',           [Operator\OperatorInspectionController::class, 'show']);
         Route::get('inspections/{inspection}',              [Operator\OperatorInspectionController::class, 'show']);
         Route::post('inspections/{inspection}/finish',      [Operator\OperatorInspectionController::class, 'finish']);
 
@@ -138,5 +157,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Defect type list for UI dropdown
         Route::get('defect-types',                          [Operator\DefectController::class, 'defectTypes']);
+
+        // Master data dropdowns (read-only, untuk UI popup)
+        Route::get('yarn-types', [Admin\YarnTypeController::class, 'index']);
+        Route::get('settings',   [Admin\SettingController::class,  'index']);
+        Route::get('gramasis',   [Admin\GramasiController::class,  'index']);
     });
 });

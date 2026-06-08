@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -17,7 +17,7 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
 /* Result hero */
 .rh{text-align:center;padding:.5rem 0}
 .rh-res{font-size:2.8rem;font-weight:800;letter-spacing:-1px;margin-bottom:.3rem}
-.rh-res.PASS{color:var(--success)}.rh-res.FAIL{color:var(--danger)}
+.rh-res.A{color:var(--success)}.rh-res.B{color:var(--warning)}.rh-res.BS{color:var(--danger)}
 .rh-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.9rem}
 .rh-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.8rem;text-align:center}
 .rh-val{font-size:1.2rem;font-weight:800;color:var(--text)}
@@ -64,16 +64,31 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
     <div class="ig" id="rollInfo"></div>
   </div>
 
+  <!-- Dimensi Hasil Inspeksi -->
+  <p class="slabel">Informasi Dimensi</p>
+  <div class="card" style="border: 1px solid var(--accent); background: var(--accent-light);">
+    <div style="font-size: .8rem; font-weight: 700; color: var(--accent); margin-bottom: .8rem; display: flex; align-items: center; gap: .4rem;">
+      <span>📏</span> Dimensi Hasil Inspeksi
+    </div>
+    <div class="ig" id="dimensionInfo"></div>
+  </div>
+
+  <!-- Laporan opsional -->
+  <p class="slabel" id="laporanTitle" style="display:none">Laporan</p>
+  <div class="card" id="laporanInfo" style="display:none;margin-bottom:1rem">
+    <div class="ig" id="laporanGrid"></div>
+  </div>
+
   <!-- B. Hasil inspeksi -->
   <p class="slabel">Hasil Inspeksi</p>
   <div class="card">
     <div class="rh">
       <div class="rh-res" id="rhResult">—</div>
       <div class="bar-wrap"><div class="bar-fill" id="barFill"></div></div>
-      <div class="bar-note">Batas PASS ≤ 24 poin / 100 m</div>
+      <div class="bar-note">Grade A ≤15 · B &gt;15 &lt;20 · BS ≥20</div>
       <div class="rh-grid">
         <div class="rh-box"><div class="rh-val" id="rhPts">—</div><div class="rh-lbl">Total Poin</div></div>
-        <div class="rh-box"><div class="rh-val" id="rhScore">—</div><div class="rh-lbl">Score /100m</div></div>
+        <div class="rh-box"><div class="rh-val" id="rhScore">—</div><div class="rh-lbl">Score</div></div>
       </div>
     </div>
   </div>
@@ -85,7 +100,7 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
 
   <!-- REJECTED banner -->
   <div class="banner b-rej" id="rejBanner" style="display:none">
-    ✕ &nbsp;<div><strong>Inspeksi Ditolak</strong><br><span id="rejReason" style="font-size:.82rem;opacity:.9"></span><br><span style="font-size:.78rem;opacity:.7">Status roll dikembalikan ke <strong>PENDING</strong> — menunggu inspeksi ulang oleh operator.</span></div>
+    ✕ &nbsp;<div><strong>Inspeksi Ditolak</strong><br><span id="rejReason" style="font-size:.82rem;opacity:.9"></span><br><span style="font-size:.78rem;opacity:.7">Status roll dikembalikan ke <strong>RE-INSPEKSI</strong> — menunggu inspeksi ulang oleh operator.</span></div>
   </div>
 
   <!-- C. Defect list -->
@@ -105,9 +120,9 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
 
   <!-- D. QC Actions (SUBMITTED only) -->
   <div id="actionSection" style="display:none;margin-top:1rem">
-    <div class="act-bar">
-      <button class="btn-val" id="btnValidate">✓ &nbsp;Validate</button>
-      <button class="btn-rej" id="btnReject">✕ &nbsp;Reject</button>
+    <div class="act-bar" style="display:flex">
+      <button class="btn-val" id="btnValidate" style="flex:1;padding:.85rem;font-size:.95rem;font-weight:700">✓ &nbsp;Lolos / Validasi</button>
+      <button class="btn-rej" id="btnReject" style="flex:1;padding:.85rem;font-size:.95rem;font-weight:700">✕ &nbsp;Tolak / Re-inspeksi</button>
     </div>
   </div>
 
@@ -118,6 +133,11 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
   <div class="mbox">
     <h3>Tolak Inspeksi?</h3>
     <p>Berikan alasan penolakan. Roll akan dikembalikan ke operator untuk inspeksi ulang.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.65rem">
+      <button type="button" class="m-cancel" style="font-size:.75rem;padding:.35rem .6rem" data-reason="Data roll salah (meter/KG/gramasi)">Data roll salah</button>
+      <button type="button" class="m-cancel" style="font-size:.75rem;padding:.35rem .6rem" data-reason="Cacat kurang / posisi salah">Cacat / posisi</button>
+      <button type="button" class="m-cancel" style="font-size:.75rem;padding:.35rem .6rem" data-reason="Benang tidak sesuai sample">Benang tidak sesuai</button>
+    </div>
     <textarea id="rejectReason" placeholder="Tuliskan alasan penolakan…"></textarea>
     <div class="merr" id="reasonErr">Alasan penolakan wajib diisi.</div>
     <div class="macts">
@@ -129,15 +149,28 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
 
 <div id="toast"></div>
 
+<script src="scoring.js"></script>
 <script>
 const BASE=`http://127.0.0.1:8000/api`;
 const token=localStorage.getItem('token');
 if(!token) location.replace('index.html');
 const role=localStorage.getItem('role');
-if(role&&role!=='qc'&&role!=='admin') location.replace({operator:'dashboard.html',admin:'admin.html'}[role]||'index.html');
+if(role&&role!=='qc'&&role!=='admin') location.replace('index.html');
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function formatDefectPosition(pos) {
+  const s = String(pos ?? '');
+  if (/^\d+(\.\d{1,2})?-\d+(\.\d{1,2})?$/.test(s)) {
+    const [from, to] = s.split('-');
+    return `${from} s/d ${to} m`;
+  }
+  return `${s} m`;
+}
+function positionSortKey(pos) {
+  const m = String(pos ?? '').match(/^(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : 0;
+}
 const auth=()=>({Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json'});
 
 let inspection=null;
@@ -147,7 +180,7 @@ let tt;
 
 // ── Central state guard ─────────────────────────────────
 function isActionable(status) {
-  return (status || '').toUpperCase() === 'SUBMITTED';
+  return (status || '').toUpperCase() === 'QC_VALIDATED' && role === 'admin';
 }
 
 // ── Error message mapper ─────────────────────────────
@@ -228,11 +261,12 @@ async function fetchTimeline(silent=false){
 // ── Init ─────────────────────────────────────────────────
 async function init(){
   const id=new URLSearchParams(location.search).get('id')||localStorage.getItem('qc_inspection_id');
-  if(!id){toast('ID inspeksi tidak ditemukan.','err');setTimeout(()=>location.replace('qc.html'),1500);return;}
+  if(!id || id === 'undefined' || id === 'null'){toast('ID inspeksi tidak ditemukan.','err');setTimeout(()=>location.replace(role==='admin'?'admin.html':'qc.html'),1500);return;}
   try{
-    const res=await fetch(`${BASE}/qc/inspections/${id}`,{headers:auth()});
+    const res=await fetch(`${BASE}/inspections/${id}`,{headers:auth()});
     if(res.status===401){localStorage.clear();location.replace('index.html');return;}
-    if(res.status===403){toast('Akses ditolak.','err');setTimeout(()=>location.replace('qc.html'),1500);return;}
+    if(res.status===403){toast('Akses ditolak.','err');setTimeout(()=>location.replace(role==='admin'?'admin.html':'qc.html'),1500);return;}
+    if(!res.ok){throw new Error('Failed to load inspection');}
     const data=await res.json();
     inspection=data.data??data;
     render();
@@ -248,13 +282,15 @@ async function init(){
 function pillHtml(s){
   const u=(s||'').toUpperCase();
   const map = {
-    NEW:         ['spill sp-new', 'NEW'],
-    IN_PROGRESS: ['spill sp-ip',  'IN PROGRESS'],
-    SUBMITTED:   ['spill sp-sub', 'SUBMITTED'],
-    VALIDATED:   ['spill sp-val', 'VALIDATED'],
-    PENDING:     ['spill sp-pnd', 'PENDING'],
-    REJECTED:    ['spill sp-rej', 'REJECTED'],
-    COMPLETED:   ['spill sp-cmp', 'COMPLETED'],
+    NEW:          ['spill sp-new', 'BARU'],
+    IN_PROGRESS:  ['spill sp-ip',  'IN PROGRESS'],
+    SUBMITTED:    ['spill sp-sub', 'TAHAN'],
+    VALIDATED:    ['spill sp-val', 'LOLOS'],
+    PENDING:      ['spill sp-pnd', 'RE-INSPEKSI'],
+    REJECTED:     ['spill sp-rej', 'DITOLAK'],
+    COMPLETED:    ['spill sp-cmp', 'SELESAI'],
+    QC_VALIDATED: ['spill sp-sub', 'MENUNGGU RILIS'],
+    RELEASED:     ['spill sp-val', 'DIRILIS'],
   };
   const [cls, label] = map[u] ?? ['spill sp-new', u || '—'];
   return [cls, label];
@@ -276,38 +312,85 @@ function render(){
   $('hRoll').textContent=machine.machine_name??'';
 
   // Roll info grid
+  const shiftMap={pagi:'Pagi',siang:'Siang',malam:'Malam'};
+  const shiftVal=inspection.shift?.value??inspection.shift;
   const fields=[
     ['Roll Code',roll.roll_code??'—'],['Machine',machine.machine_name??'—'],
-    ['Client',client.client_name??'—'],['Operator',operator.name??'—'],
-    ['Panjang',parseFloat(roll.length_meter??0).toFixed(0)+' m'],['Batch',roll.batch_number??'—'],
+    ['Customer',client.client_name??'—'],['Operator',operator.name??'—'],
+    ['Shift',shiftMap[(shiftVal||'').toLowerCase()]??shiftVal??'—'],
+    ['KG',parseFloat(inspection.weight_kg??0).toFixed(2)],
+    ['Benang',inspection.yarn_name??'—'],
+    ['OPK',req.opk??'—'],
+    ['Req. Setting',req.setting?.setting_name??'—'],
+    ['Req. Gramasi',req.gramasi??'—'],
+    ['Lot (Batch)',roll.batch_number??'—'],
     ['Waktu Mulai',fmtDt(inspection.start_time)],['Waktu Selesai',fmtDt(inspection.end_time)],
   ];
   $('rollInfo').innerHTML=fields.map(([l,v])=>
     `<div class="ii"><div class="il">${esc(l)}</div><div class="iv">${esc(v)}</div></div>`
   ).join('');
 
+  // Dimensi Hasil Inspeksi grid
+  const dimFields=[
+    ['Panjang',parseFloat(inspection.length_meter??0).toFixed(1)+' m'],
+    ['Gramasi',inspection.gramasi ? `${inspection.gramasi} g/m²` : '—'],
+    ['Lebar',parseFloat(inspection.lebar??0).toFixed(1)+' inci'],
+  ];
+  $('dimensionInfo').innerHTML=dimFields.map(([l,v])=>
+    `<div class="ii"><div class="il">${esc(l)}</div><div class="iv">${esc(v)}</div></div>`
+  ).join('');
+
+  const laporanFields=[];
+  if (inspection.potongan_1_kg != null && inspection.potongan_1_kg !== '') {
+    laporanFields.push(['Potongan 1', `${parseFloat(inspection.potongan_1_kg).toFixed(2)} KG`]);
+  }
+  if (inspection.potongan_2_kg != null && inspection.potongan_2_kg !== '') {
+    laporanFields.push(['Potongan 2', `${parseFloat(inspection.potongan_2_kg).toFixed(2)} KG`]);
+  }
+  if (inspection.keterangan_visual) {
+    laporanFields.push(['Keterangan Visual', inspection.keterangan_visual]);
+  }
+  if (inspection.catatan) {
+    laporanFields.push(['Catatan', inspection.catatan]);
+  }
+  if (laporanFields.length) {
+    $('laporanTitle').style.display='';
+    $('laporanInfo').style.display='';
+    $('laporanGrid').innerHTML=laporanFields.map(([l,v])=>
+      `<div class="ii" style="grid-column:1/-1"><div class="il">${esc(l)}</div><div class="iv" style="white-space:pre-wrap">${esc(v)}</div></div>`
+    ).join('');
+  } else {
+    $('laporanTitle').style.display='none';
+    $('laporanInfo').style.display='none';
+  }
+
   // Result
-  const res=(inspection.result||'').toUpperCase();
+  const grade=(inspection.result||'').toUpperCase();
   const score=parseFloat(inspection.score??0);
   const pts=inspection.total_points??0;
-  $('rhResult').textContent=res||'—';
-  $('rhResult').className=`rh-res ${res}`;
+  $('rhResult').textContent=grade||'—';
+  $('rhResult').className=`rh-res ${grade}`;
   $('rhPts').textContent=pts;
   $('rhScore').textContent=score.toFixed(2);
-  const pct=Math.min(100,(score/48)*100);
-  $('barFill').style.width=pct+'%';
-  $('barFill').style.background=res==='PASS'?'var(--ok)':'var(--er)';
+  $('barFill').style.width=gradeBarPercent(score)+'%';
+  $('barFill').style.background=gradeBarColor(grade);
 
   // Banners
-  if(st==='VALIDATED'){
+  if(st==='VALIDATED' || st==='RELEASED'){
     const vAt=fmtDt(inspection.validated_at);
     const vBy=validator.name??`ID: ${inspection.validated_by??'—'}`;
+    $('valBanner').className='banner b-val';
     $('valBanner').style.display='flex';
+    $('valBanner').querySelector('strong').textContent=st==='RELEASED'?'Inspeksi Dirilis':'Inspeksi Divalidasi';
     $('valInfo').textContent=`Oleh: ${vBy}  ·  ${vAt}`;
-  }
-  if(st==='REJECTED'){
+    $('rejBanner').style.display='none';
+  } else if(st==='REJECTED'){
     $('rejBanner').style.display='flex';
     $('rejReason').textContent=`Alasan: ${inspection.rejection_reason??'—'}`;
+    $('valBanner').style.display='none';
+  } else {
+    $('valBanner').style.display='none';
+    $('rejBanner').style.display='none';
   }
 
   // Defects
@@ -316,25 +399,34 @@ function render(){
   if(!defects.length){
     $('defectList').innerHTML='<div style="text-align:center;padding:2rem 1rem;color:var(--mu);font-size:.88rem">Tidak ada data cacat.</div>';
   } else {
-    const sorted=[...defects].sort((a,b)=>parseFloat(a.position_meter)-parseFloat(b.position_meter));
+    const sorted=[...defects].sort((a,b)=>positionSortKey(a.position_meter)-positionSortKey(b.position_meter));
     $('defectList').innerHTML=sorted.map(d=>{
       const tn=d.defect_type?.defect_name??d.defect_type_name??`#${d.defect_type_id}`;
+      let sideText = '';
+      if (d.side) {
+        if (d.side === 'depan') {
+          sideText = `<span style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:var(--accent-light);color:var(--accent);padding:.15rem .4rem;border-radius:4px;margin-right:.45rem;display:inline-block;vertical-align:middle;">Depan</span>`;
+        } else if (d.side === 'belakang') {
+          sideText = `<span style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:rgba(225,29,72,.1);color:#e11d48;padding:.15rem .4rem;border-radius:4px;margin-right:.45rem;display:inline-block;vertical-align:middle;">Belakang</span>`;
+        }
+      }
       return `<div class="def-row">
         <div class="d-dot"></div>
         <div class="d-info">
-          <div class="d-name">${esc(tn)}</div>
-          <div class="d-meta">Posisi: ${esc(d.position_meter)} m${d.notes?` · ${esc(d.notes)}`:''}</div>
+          <div class="d-name">${sideText}${esc(tn)}</div>
+          <div class="d-meta">Posisi: ${esc(formatDefectPosition(d.position_meter))}${d.notes?` · ${esc(d.notes)}`:''}</div>
         </div>
         <div class="d-pt">${esc(d.point)} pt</div>
       </div>`;
     }).join('');
   }
 
-  // Actions — only show Validate/Reject buttons when status is SUBMITTED
-  if(st==='SUBMITTED'){
+  // Actions — only show Release/Reject buttons for admin when status is QC_VALIDATED
+  if(isActionable(st)){
     $('actionSection').style.display='';
+    $('btnValidate').textContent='✓  Rilis ke Customer';
+    $('btnReject').textContent='✕  Tolak / Re-inspeksi';
   } else {
-    // VALIDATED, REJECTED, and any other state: hide actions (read-only page)
     $('actionSection').style.display='none';
   }
 }
@@ -344,63 +436,66 @@ function fmtDt(s){
   try{return new Date(s).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return s;}
 }
 
-// ── Validate ──────────────────────────────────────────────
+// ── Validate (Admin Release validation) ───────────────────────
 async function validateInspection() {
-  // ★ Defensive guard
   if (!isActionable(inspection?.status)) {
     toast('Inspection already finalized.', 'err'); return;
   }
   if (acting) return;
   acting = true;
   $('btnValidate').disabled = true;
-  $('btnReject').disabled   = true;
-  $('btnValidate').innerHTML = '<span class="spinner"></span>&nbsp;Memvalidasi…';
+  $('btnValidate').innerHTML = '<span class="spinner"></span>&nbsp;Memproses…';
   try {
-    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}/validate`, { method:'POST', headers:auth() });
+    const res = await fetch(`${BASE}/admin/inspections/${inspection.id}/release`, {
+      method: 'POST', headers: auth()
+    });
     const data = await res.json();
     if (res.status === 409 || (data.message||'').toLowerCase().includes('already')) {
       toast('Inspection already finalized. Data refreshed.', 'err', 3500);
-      acting = false; await silentRefresh(); return;
+      acting = false;
+      await silentRefresh();
+      return;
     }
     if (!res.ok) {
-      toast(apiErrorMsg(data, res.status, 'Gagal memvalidasi.'), 'err');
+      toast(apiErrorMsg(data, res.status, 'Gagal merilis inspeksi.'), 'err');
       acting = false;
-      $('btnValidate').disabled = false; $('btnReject').disabled = false;
-      $('btnValidate').innerHTML = '✓ &nbsp;Validate'; return;
+      $('btnValidate').disabled = false;
+      $('btnValidate').innerHTML = '✓  Rilis ke Customer';
+      return;
     }
     inspection = data.data ?? data;
     stopPolling();
-    toast('Inspeksi berhasil divalidasi! ✓', 'ok', 3000);
+    toast('Roll dirilis ke customer.', 'success', 3500);
     $('actionSection').style.display = 'none';
-    const [pc,pl] = pillHtml('VALIDATED');
+    const [pc,pl] = pillHtml('RELEASED');
     $('hPill').className = pc; $('hPill').textContent = pl;
-    $('valBanner').style.display = 'flex';
-    const me = localStorage.getItem('user_name') || 'QC';
-    $('valInfo').textContent = `Oleh: ${me}  ·  ${fmtDt(new Date().toISOString())}`;
+    render();
     fetchTimeline(true);
   } catch (_) {
     toast('Network error. Periksa koneksi Anda.', 'err');
     acting = false;
-    $('btnValidate').disabled = false; $('btnReject').disabled = false;
-    $('btnValidate').innerHTML = '✓ &nbsp;Validate';
+    $('btnValidate').disabled = false;
+    $('btnValidate').innerHTML = '✓  Rilis ke Customer';
   }
 }
 $('btnValidate').addEventListener('click', validateInspection);
+
 // ── Reject modal ─────────────────────────────────────────
 $('btnReject').addEventListener('click', () => {
-  // ★ Defensive guard
   if (!isActionable(inspection?.status)) {
     toast('Inspection already finalized.', 'err'); return;
   }
   if (!acting) { $('rejectReason').value=''; $('reasonErr').style.display='none'; $('modal').classList.add('show'); }
 });
 $('modalCancel').addEventListener('click', () => $('modal').classList.remove('show'));
+document.querySelectorAll('[data-reason]').forEach(btn => {
+  btn.addEventListener('click', () => { $('rejectReason').value = btn.dataset.reason; $('reasonErr').style.display = 'none'; });
+});
 
 async function rejectInspection() {
   const reason = $('rejectReason').value.trim();
   if (!reason) { $('reasonErr').style.display='block'; $('rejectReason').focus(); return; }
   $('reasonErr').style.display = 'none';
-  // ★ Defensive guard
   if (!isActionable(inspection?.status)) {
     toast('Inspection already finalized.', 'err');
     $('modal').classList.remove('show');
@@ -409,11 +504,10 @@ async function rejectInspection() {
   if (acting) return;
   acting = true;
   $('modal').classList.remove('show');
-  $('btnValidate').disabled = true;
   $('btnReject').disabled   = true;
   $('btnReject').innerHTML  = '<span class="spinner"></span>&nbsp;Menolak…';
   try {
-    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}/reject`, {
+    const res  = await fetch(`${BASE}/admin/inspections/${inspection.id}/reject`, {
       method: 'POST', headers: auth(), body: JSON.stringify({ reason })
     });
     const data = await res.json();
@@ -426,14 +520,13 @@ async function rejectInspection() {
     if (!res.ok) {
       toast(apiErrorMsg(data, res.status, 'Gagal menolak inspeksi.'), 'err');
       acting = false;
-      $('btnValidate').disabled = false;
       $('btnReject').disabled   = false;
-      $('btnReject').innerHTML  = '✕ &nbsp;Reject';
+      $('btnReject').innerHTML  = '✕  Tolak / Re-inspeksi';
       return;
     }
     inspection = data.data ?? data;
     stopPolling();
-    toast('Inspeksi ditolak. Roll dikembalikan.', 'err', 3500);
+    toast('Inspeksi ditolak. Roll dikembalikan ke QC.', 'err', 3500);
     $('actionSection').style.display = 'none';
     const [pc,pl] = pillHtml('REJECTED');
     $('hPill').className = pc; $('hPill').textContent = pl;
@@ -443,9 +536,8 @@ async function rejectInspection() {
   } catch (_) {
     toast('Network error. Periksa koneksi Anda.', 'err');
     acting = false;
-    $('btnValidate').disabled = false;
     $('btnReject').disabled   = false;
-    $('btnReject').innerHTML  = '✕ &nbsp;Reject';
+    $('btnReject').innerHTML  = '✕  Tolak / Re-inspeksi';
   }
 }
 $('modalConfirm').addEventListener('click', rejectInspection);
@@ -454,7 +546,7 @@ $('modalConfirm').addEventListener('click', rejectInspection);
 async function silentRefresh() {
   if (!inspection?.id) return;
   try {
-    const res  = await fetch(`${BASE}/qc/inspections/${inspection.id}`, { headers: auth() });
+    const res  = await fetch(`${BASE}/inspections/${inspection.id}`, { headers: auth() });
     if (res.status === 401) { localStorage.clear(); location.replace('index.html'); return; }
     if (!res.ok) return;
     const data   = await res.json();
@@ -467,7 +559,7 @@ async function silentRefresh() {
       render();
       fetchTimeline(true);
     }
-    if (['VALIDATED','REJECTED'].includes(newSt)) stopPolling();
+    if (['RELEASED','REJECTED'].includes(newSt)) stopPolling();
   } catch (_) { /* silent */ }
 }
 
@@ -475,12 +567,12 @@ async function silentRefresh() {
 function startPolling() { stopPolling(); pollTimer = setInterval(silentRefresh, 20_000); }
 function stopPolling()  { clearInterval(pollTimer); pollTimer = null; }
 
-$('backBtn').addEventListener('click', () => { stopPolling(); location.href='qc.html'; });
+$('backBtn').addEventListener('click', () => { stopPolling(); location.href = role === 'admin' ? 'admin.html' : 'qc.html'; });
 
 async function initThenPoll() {
   await init();
   const st = (inspection?.status || '').toUpperCase();
-  if (!['VALIDATED','REJECTED'].includes(st)) startPolling();
+  if (!['RELEASED','REJECTED'].includes(st)) startPolling();
 }
 initThenPoll();
 </script>

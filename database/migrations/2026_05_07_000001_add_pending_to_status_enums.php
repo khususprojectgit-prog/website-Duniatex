@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
         // Add PENDING to fabric_rolls.status ENUM
         DB::statement("
             ALTER TABLE fabric_rolls
@@ -32,6 +36,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
         // Remove PENDING — convert any PENDING rows back to NEW first
         DB::statement("UPDATE fabric_rolls SET status = 'NEW' WHERE status = 'PENDING'");
         DB::statement("

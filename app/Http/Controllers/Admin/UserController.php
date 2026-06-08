@@ -32,7 +32,7 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:100'],
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role'     => ['required', Rule::in(['admin', 'qc', 'operator'])],
+            'role'     => ['required', Rule::in(['admin', 'qc'])],
             'status'   => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 
@@ -57,7 +57,7 @@ class UserController extends Controller
             'name'     => ['sometimes', 'string', 'max:100'],
             'email'    => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
             'password' => ['sometimes', 'string', 'min:8'],
-            'role'     => ['sometimes', Rule::in(['admin', 'qc', 'operator'])],
+            'role'     => ['sometimes', Rule::in(['admin', 'qc'])],
             'status'   => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 

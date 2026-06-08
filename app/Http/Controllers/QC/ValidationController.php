@@ -13,29 +13,37 @@ class ValidationController extends Controller
 {
     public function __construct(protected InspectionService $inspectionService) {}
 
-    /** GET /api/qc/inspections */
     public function index(Request $request): JsonResponse
     {
+        $status = $request->status ?: 'SUBMITTED';
+
         $inspections = Inspection::with(
             'roll.inspectionRequest.client',
             'roll.machine',
             'operator'
         )
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when(! $request->status, fn ($q) => $q->where('status', 'SUBMITTED'))
+            ->when($status, function ($q) use ($status) {
+                if ($status === 'SUBMITTED') {
+                    $q->whereIn('status', ['SUBMITTED', 'VALIDATED']);
+                } else {
+                    $q->where('status', $status);
+                }
+            })
             ->orderByDesc('created_at')
             ->paginate(20);
 
         return $this->successPaginated('Inspections retrieved.', $inspections);
     }
 
-    /** GET /api/qc/inspections/{inspection} */
     public function show(Inspection $inspection): JsonResponse
     {
         return $this->success(
             'Inspection retrieved.',
             $inspection->load(
                 'roll.inspectionRequest.client',
+                'roll.inspectionRequest.qc',
+                'roll.inspectionRequest.setting',
+                'roll.inspectionRequest.yarnType',
                 'roll.machine',
                 'operator',
                 'validator',

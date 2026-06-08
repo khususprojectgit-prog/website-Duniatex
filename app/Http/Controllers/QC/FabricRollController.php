@@ -20,7 +20,7 @@ class FabricRollController extends Controller
     public function index(InspectionRequest $inspectionRequest): JsonResponse
     {
         $rolls = $inspectionRequest->fabricRolls()
-            ->with('machine', 'inspection')
+            ->with('machine', 'assignedOperator', 'latestInspection')
             ->orderBy('roll_code')
             ->get();
 
@@ -35,11 +35,20 @@ class FabricRollController extends Controller
             return $this->error('Cannot add rolls to a completed request.');
         }
 
+        $operator = \App\Models\User::where('id', $request->validated()['operator_id'])
+            ->where('role', 'qc')
+            ->where('status', 'active')
+            ->first();
+
+        if (! $operator) {
+            return $this->error('QC tidak ditemukan atau tidak aktif.', null, 422);
+        }
+
         $roll = DB::transaction(function () use ($request, $inspectionRequest) {
 
             $data = array_merge($request->validated(), [
                 'request_id' => $inspectionRequest->id,
-                'status'     => 'NEW', // ✅ FIX: sesuai ENUM database
+                'status'     => 'NEW',
             ]);
 
             $roll = FabricRoll::create($data);
@@ -62,9 +71,9 @@ class FabricRollController extends Controller
                 'roll_id'    => $roll->id,
                 'request_id' => $inspectionRequest->id,
                 'metadata'   => [
-                    'roll_code'    => $roll->roll_code,
-                    'length_meter' => $roll->length_meter,
-                    'machine_id'   => $roll->machine_id,
+                    'roll_code'   => $roll->roll_code,
+                    'operator_id' => $roll->operator_id,
+                    'machine_id'  => $roll->machine_id,
                 ],
             ]
         );
@@ -92,9 +101,10 @@ class FabricRollController extends Controller
             'Fabric roll retrieved.',
             $fabricRoll->load(
                 'machine',
+                'assignedOperator',
                 'request.client',
-                'inspection.defects.defectType',
-                'inspection.operator'
+                'latestInspection.defects.defectType',
+                'latestInspection.operator'
             )
         );
     }

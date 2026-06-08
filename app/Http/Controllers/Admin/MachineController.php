@@ -27,7 +27,7 @@ class MachineController extends Controller
     {
         $data = $request->validate([
             'machine_name' => ['required', 'string', 'max:100', 'unique:machines,machine_name'],
-            'machine_type' => ['required', 'string', 'max:50'],
+            'machine_type' => ['nullable', 'string', 'max:50'],
             'location'     => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -47,7 +47,7 @@ class MachineController extends Controller
     {
         $data = $request->validate([
             'machine_name' => ['sometimes', 'string', 'max:100', "unique:machines,machine_name,{$machine->id}"],
-            'machine_type' => ['sometimes', 'string', 'max:50'],
+            'machine_type' => ['nullable', 'string', 'max:50'],
             'location'     => ['nullable', 'string', 'max:100'],
         ]);
 

@@ -21,7 +21,7 @@ class StoreClientRequest extends FormRequest
             'client_name'    => [$required, 'string', 'max:100', "unique:clients,client_name,{$clientId}"],
             'company'        => [$required, 'string', 'max:150'],
             'contact_person' => [$required, 'string', 'max:100'],
-            'phone'          => [$required, 'string', 'max:20'],
+            'phone'          => ['nullable', 'string', 'max:20'],
             'address'        => ['nullable', 'string', 'max:500'],
         ];
     }

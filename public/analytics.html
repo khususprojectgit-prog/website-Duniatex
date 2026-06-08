@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Analytics — Duniatex Inspection</title>
+<title>Final Data — Duniatex Inspection</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="shared.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -41,8 +41,9 @@ tr:last-child td{border-bottom:none}
 .pager{display:flex;gap:.4rem;margin-top:.75rem;align-items:center;justify-content:flex-end;font-size:.8rem;color:var(--muted)}
 .pager button{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.25rem .65rem;cursor:pointer;font:.8rem 'Inter',sans-serif;color:var(--text)}
 .pager button:disabled{opacity:.4;cursor:not-allowed}
-.res-pass{color:var(--success);font-weight:700}
-.res-fail{color:var(--danger);font-weight:700}
+.res-a{color:var(--success);font-weight:700}
+.res-b{color:var(--warning);font-weight:700}
+.res-bs{color:var(--danger);font-weight:700}
 .badge-admin{display:inline-block;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);color:var(--warning);border-radius:6px;font-size:.65rem;font-weight:700;padding:.1rem .45rem;letter-spacing:.04em;text-transform:uppercase}
 @media print{
   .filter-bar,.pager,.tab-tbl,.fbtn{display:none!important}
@@ -55,9 +56,9 @@ tr:last-child td{border-bottom:none}
 
 <header>
   <div class="header-left">
-    <div style="width:38px;height:38px;background:linear-gradient(135deg,#059669,#4f46e5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📊</div>
+    <img src="sources/logo-duniatex.jpg" alt="Logo Duniatex" style="width:38px;height:38px;border-radius:10px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 12px var(--accent-glow)"/>
     <div>
-      <div class="header-title">Duniatex <span class="badge-admin">Analytics</span></div>
+      <div class="header-title">Duniatex <span class="badge-admin">Final Data</span></div>
       <div class="header-sub" id="uname">Administrator</div>
     </div>
   </div>
@@ -68,22 +69,24 @@ tr:last-child td{border-bottom:none}
 </header>
 
 <main>
-  <div class="page-title">📊 Inspection Analytics &amp; Reports</div>
+  <div class="page-title">📊 Inspection Final Data &amp; Reports</div>
 
   <!-- Filters -->
   <div class="filter-bar" id="filterBar">
     <div><label>Dari Tanggal</label><input type="date" id="fFrom"/></div>
     <div><label>Sampai Tanggal</label><input type="date" id="fTo"/></div>
     <div><label>Mesin</label><select id="fMachine"><option value="">Semua Mesin</option></select></div>
-    <div><label>Klien</label><select id="fClient"><option value="">Semua Klien</option></select></div>
-    <div><label>Operator</label><select id="fOperator"><option value="">Semua Operator</option></select></div>
-    <div><label>Hasil</label>
+    <div><label>Customer</label><select id="fClient"><option value="">Semua Customer</option></select></div>
+    <div style="display:none"><label>QC Inspector</label><select id="fOperator"><option value="">Semua QC Inspector</option></select></div>
+    <div><label>Grade</label>
       <select id="fResult">
         <option value="">Semua</option>
-        <option value="PASS">PASS</option>
-        <option value="FAIL">FAIL</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="BS">BS</option>
       </select>
     </div>
+    <div><label>Cari OPK</label><input type="text" id="fOpk" placeholder="Cari OPK…" autocomplete="off"/></div>
     <div style="display:flex;gap:.4rem;align-items:flex-end">
       <button class="fbtn fbtn-apply" id="btnApply">🔍 Terapkan</button>
       <button class="fbtn fbtn-reset" id="btnReset">↺ Reset</button>
@@ -95,19 +98,20 @@ tr:last-child td{border-bottom:none}
   <!-- KPI Cards -->
   <div class="kpi-grid" id="kpiGrid">
     <div class="kpi"><div class="kpi-label">Total Inspeksi</div><div class="kpi-val" id="kTotal" style="color:var(--accent)">—</div></div>
-    <div class="kpi"><div class="kpi-label">PASS Rate</div><div class="kpi-val" id="kPassRate" style="color:var(--success)">—</div><div class="kpi-sub" id="kPassN"></div></div>
-    <div class="kpi"><div class="kpi-label">FAIL Rate</div><div class="kpi-val" id="kFailRate" style="color:var(--danger)">—</div><div class="kpi-sub" id="kFailN"></div></div>
-    <div class="kpi"><div class="kpi-label">Avg Score</div><div class="kpi-val" id="kAvgScore" style="color:var(--text)">—</div><div class="kpi-sub">per 100 m</div></div>
+    <div class="kpi"><div class="kpi-label">Grade A</div><div class="kpi-val" id="kGradeA" style="color:var(--success)">—</div><div class="kpi-sub" id="kGradeAN"></div></div>
+    <div class="kpi"><div class="kpi-label">Grade B</div><div class="kpi-val" id="kGradeB" style="color:var(--warning)">—</div><div class="kpi-sub" id="kGradeBN"></div></div>
+    <div class="kpi"><div class="kpi-label">Grade BS</div><div class="kpi-val" id="kGradeBs" style="color:var(--danger)">—</div><div class="kpi-sub" id="kGradeBsN"></div></div>
+    <div class="kpi"><div class="kpi-label">Avg Score</div><div class="kpi-val" id="kAvgScore" style="color:var(--text)">—</div><div class="kpi-sub">poin×1646÷(P×L)</div></div>
     <div class="kpi"><div class="kpi-label">Total Cacat</div><div class="kpi-val" id="kDefects" style="color:var(--warning)">—</div></div>
     <div class="kpi"><div class="kpi-label">Pending QC</div><div class="kpi-val" id="kPending" style="color:var(--accent-2)">—</div></div>
-    <div class="kpi"><div class="kpi-label">Request Selesai</div><div class="kpi-val" id="kCompleted" style="color:var(--success)">—</div></div>
+    <div class="kpi"><div class="kpi-label">Order Selesai</div><div class="kpi-val" id="kCompleted" style="color:var(--success)">—</div></div>
     <div class="kpi"><div class="kpi-label">Re-Inspeksi</div><div class="kpi-val" id="kReinspect" style="color:var(--danger)">—</div></div>
   </div>
 
   <!-- Charts Row 1 -->
   <div class="chart-grid">
     <div class="chart-card">
-      <div class="chart-title">PASS vs FAIL</div>
+      <div class="chart-title">Distribusi Grade</div>
       <div class="chart-wrap"><canvas id="chartPF"></canvas></div>
     </div>
     <div class="chart-card">
@@ -141,10 +145,10 @@ tr:last-child td{border-bottom:none}
     <div class="tbl-panel active" id="t-inspections">
       <table id="tblInsp">
         <thead><tr>
-          <th>ID</th><th>Roll</th><th>Klien</th><th>Mesin</th>
-          <th>Operator</th><th>Score</th><th>Hasil</th><th>Status</th><th>Tanggal</th>
+          <th>No</th><th>OPK</th><th>Roll</th><th>Customer</th><th>Mesin</th>
+          <th>QC Inspector</th><th>Score</th><th>Grade</th><th>Status</th><th>Tanggal</th>
         </tr></thead>
-        <tbody id="bodyInsp"><tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
+        <tbody id="bodyInsp"><tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
       </table>
       <div class="pager" id="pagerInsp"></div>
     </div>
@@ -158,12 +162,26 @@ tr:last-child td{border-bottom:none}
 
     <div class="tbl-panel" id="t-machines">
       <table>
-        <thead><tr><th>Mesin</th><th>Total</th><th>PASS%</th><th>FAIL%</th><th>Avg Score</th><th>Ditolak</th></tr></thead>
+        <thead><tr><th>Mesin</th><th>Total</th><th>A%</th><th>B%</th><th>BS%</th><th>Avg Score</th><th>Ditolak</th></tr></thead>
         <tbody id="bodyMach"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Memuat…</td></tr></tbody>
       </table>
     </div>
   </div>
 </main>
+
+<!-- Detail Modal -->
+<div id="detailModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(4px); z-index:150; align-items:center; justify-content:center; padding:1.5rem;">
+  <div class="modal-box" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem 1.5rem; max-width:600px; width:100%; box-shadow:var(--shadow-md); max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:1.25rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:.5rem;">
+      <h3 id="mdTitle" style="margin:0; font-size:1.1rem; font-weight:800; color:var(--text)">Detail Inspeksi</h3>
+      <button onclick="$('detailModal').style.display='none'" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--muted); font-weight:700; line-height:1">×</button>
+    </div>
+    <div id="mdBody" style="display:flex; flex-direction:column; gap:1rem;"></div>
+    <div style="display:flex; justify-content:flex-end; border-top:1px solid var(--border); padding-top:.75rem; margin-top:.5rem">
+      <button onclick="$('detailModal').style.display='none'" class="fbtn fbtn-reset" style="height:34px; padding:0 1.25rem; font-weight:700">Tutup</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -206,6 +224,7 @@ function getFilters() {
     client_id:   $('fClient').value  || undefined,
     operator_id: $('fOperator').value|| undefined,
     result:      $('fResult').value  || undefined,
+    opk:         $('fOpk').value     || undefined,
   };
 }
 function buildQS(extra = {}) {
@@ -230,7 +249,7 @@ async function loadOptions() {
     const o = document.createElement('option'); o.value = x.id; o.textContent = x.client_name;
     $('fClient').appendChild(o);
   });
-  (u.data?.data ?? []).filter(x => x.role === 'operator').forEach(x => {
+  (u.data?.data ?? []).filter(x => x.role === 'qc').forEach(x => {
     const o = document.createElement('option'); o.value = x.id; o.textContent = x.name;
     $('fOperator').appendChild(o);
   });
@@ -242,16 +261,18 @@ async function loadSummary() {
     const res  = await fetch(`${BASE}/admin/analytics/summary?${buildQS()}`, { headers: auth() });
     const data = (await res.json()).data;
     $('kTotal').textContent    = data.total_inspections;
-    $('kPassRate').textContent = data.pass_rate + '%';
-    $('kPassN').textContent    = data.pass_count + ' inspeksi';
-    $('kFailRate').textContent = data.fail_rate + '%';
-    $('kFailN').textContent    = data.fail_count + ' inspeksi';
+    $('kGradeA').textContent   = data.grade_a_rate + '%';
+    $('kGradeAN').textContent  = data.grade_a_count + ' inspeksi';
+    $('kGradeB').textContent   = data.grade_b_rate + '%';
+    $('kGradeBN').textContent  = data.grade_b_count + ' inspeksi';
+    $('kGradeBs').textContent  = data.grade_bs_rate + '%';
+    $('kGradeBsN').textContent = data.grade_bs_count + ' inspeksi';
     $('kAvgScore').textContent = data.avg_score;
     $('kDefects').textContent  = data.total_defects;
     $('kPending').textContent  = data.pending_qc;
     $('kCompleted').textContent= data.completed_requests;
     $('kReinspect').textContent= data.reinspection_count;
-    renderPFChart(data.pass_count, data.fail_count);
+    renderGradeChart(data.grade_a_count, data.grade_b_count, data.grade_bs_count);
   } catch { toast('Gagal memuat KPI', 'err'); }
 }
 
@@ -262,8 +283,9 @@ async function loadTrends() {
     const rows = (await res.json()).data ?? [];
     const labels   = rows.map(r => r.date);
     const totals   = rows.map(r => r.total);
-    const passed   = rows.map(r => r.passed);
-    const failed   = rows.map(r => r.failed);
+    const gradeA   = rows.map(r => r.grade_a);
+    const gradeB   = rows.map(r => r.grade_b);
+    const gradeBs  = rows.map(r => r.grade_bs);
     if (charts.trend) charts.trend.destroy();
     charts.trend = new Chart($('chartTrend'), {
       type: 'line',
@@ -271,8 +293,9 @@ async function loadTrends() {
         labels,
         datasets: [
           { label:'Total', data: totals, borderColor:'#4f46e5', backgroundColor:'rgba(79,70,229,.1)', tension:.4, fill:true, pointRadius:2 },
-          { label:'PASS',  data: passed, borderColor:'#059669', backgroundColor:'transparent', tension:.4, pointRadius:2 },
-          { label:'FAIL',  data: failed, borderColor:'#dc2626', backgroundColor:'transparent', tension:.4, pointRadius:2 },
+          { label:'A',  data: gradeA, borderColor:'#059669', backgroundColor:'transparent', tension:.4, pointRadius:2 },
+          { label:'B',  data: gradeB, borderColor:'#d97706', backgroundColor:'transparent', tension:.4, pointRadius:2 },
+          { label:'BS', data: gradeBs, borderColor:'#dc2626', backgroundColor:'transparent', tension:.4, pointRadius:2 },
         ]
       },
       options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ boxWidth:10, font:{size:10} } } }, scales:{ y:{ beginAtZero:true, ticks:{font:{size:10}} }, x:{ ticks:{font:{size:9}, maxTicksLimit:10} } } }
@@ -281,13 +304,13 @@ async function loadTrends() {
 }
 
 // ── Pass/Fail Doughnut ────────────────────────────────────
-function renderPFChart(pass, fail) {
+function renderGradeChart(a, b, bs) {
   if (charts.pf) charts.pf.destroy();
   charts.pf = new Chart($('chartPF'), {
     type: 'doughnut',
     data: {
-      labels: ['PASS', 'FAIL'],
-      datasets: [{ data:[pass, fail], backgroundColor:['#059669','#dc2626'], borderWidth:0 }]
+      labels: ['A', 'B', 'BS'],
+      datasets: [{ data:[a, b, bs], backgroundColor:['#059669','#d97706','#dc2626'], borderWidth:0 }]
     },
     options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } } }
@@ -335,23 +358,29 @@ async function loadMachines() {
       data: {
         labels: rows.map(r => r.machine),
         datasets: [{ label:'Avg Score', data: rows.map(r => r.avg_score),
-          backgroundColor: rows.map(r => r.avg_score <= 24 ? 'rgba(5,150,105,.7)' : 'rgba(220,38,38,.7)'),
+          backgroundColor: rows.map(r => {
+            const s = r.avg_score;
+            if (s <= 15) return 'rgba(5,150,105,.7)';
+            if (s >= 20) return 'rgba(220,38,38,.7)';
+            return 'rgba(217,119,6,.7)';
+          }),
           borderRadius:4 }]
       },
       options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{ display:false } },
-        scales:{ x:{ beginAtZero:true, max:48, ticks:{font:{size:10}} }, y:{ ticks:{font:{size:9}} } }
+        scales:{ x:{ beginAtZero:true, max:30, ticks:{font:{size:10}} }, y:{ ticks:{font:{size:9}} } }
       }
     });
     $('bodyMach').innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${esc(r.machine)}</td>
         <td>${r.total}</td>
-        <td style="color:var(--success)">${r.pass_rate}%</td>
-        <td style="color:var(--danger)">${r.fail_rate}%</td>
+        <td style="color:var(--success)">${r.grade_a_rate}%</td>
+        <td style="color:var(--warning)">${r.grade_b_rate}%</td>
+        <td style="color:var(--danger)">${r.grade_bs_rate}%</td>
         <td>${r.avg_score}</td>
         <td>${r.rejection_count}</td>
-      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
   } catch {}
 }
 
@@ -368,6 +397,7 @@ async function loadInspections(page = 1) {
       const status = typeof r.status === 'object' ? r.status?.value : r.status;
       return `<tr>
         <td>${r.id}</td>
+        <td>${esc(r.roll?.inspection_request?.opk??'-')}</td>
         <td><code>${esc(r.roll?.roll_code??'-')}</code></td>
         <td>${esc(r.roll?.inspection_request?.client?.client_name??'-')}</td>
         <td>${esc(r.roll?.machine?.machine_name??'-')}</td>
@@ -375,9 +405,9 @@ async function loadInspections(page = 1) {
         <td>${parseFloat(r.score??0).toFixed(2)}</td>
         <td class="res-${(r.result||'').toLowerCase()}">${r.result??'-'}</td>
         <td><span class="spill sp-${(status||'').toLowerCase().replace('_','-')}">${status??'-'}</span></td>
-        <td style="font-size:.75rem;color:var(--muted)">${r.created_at?.slice(0,10)??'-'}</td>
+        <td style="font-size:.75rem"><a href="#" onclick="showDetail(${r.id}); return false;" style="color:var(--accent);text-decoration:none;font-weight:600;border-bottom:1px dashed var(--accent)">${r.created_at?.slice(0,10)??'-'}</a></td>
       </tr>`;
-    }).join('') : `<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
+    }).join('') : `<tr><td colspan="10" style="text-align:center;padding:1.5rem;color:var(--muted)">Tidak ada data</td></tr>`;
 
     // Pager
     const lp = meta.last_page ?? 1;
@@ -387,6 +417,135 @@ async function loadInspections(page = 1) {
       <span>Hal ${page} / ${lp}</span>
       <button onclick="loadInspections(${page+1})" ${page>=lp?'disabled':''}>›</button>`;
   } catch {}
+}
+
+// ── Detail Modal & Helpers ─────────────────────────────────
+function formatDefectPosition(pos) {
+  const s = String(pos ?? '');
+  if (/^\d+(\.\d{1,2})?-\d+(\.\d{1,2})?$/.test(s)) {
+    const [from, to] = s.split('-');
+    return `${from} s/d ${to} m`;
+  }
+  return `${s} m`;
+}
+
+function resultHtml(r){
+  const u = (r || '').toUpperCase();
+  if (u === 'A') return `<span class="res-a">A</span>`;
+  if (u === 'B') return `<span class="res-b">B</span>`;
+  if (u === 'BS') return `<span class="res-bs">BS</span>`;
+  return `<span>—</span>`;
+}
+
+function pillHtml(s){
+  const u = (s || '').toUpperCase();
+  const map = {
+    NEW:         ['sp-new', 'BARU'],
+    IN_PROGRESS: ['sp-ip',  'IN PROGRESS'],
+    SUBMITTED:   ['sp-sub', 'TAHAN'],
+    VALIDATED:   ['sp-val', 'LOLOS'],
+    PENDING:     ['sp-pnd', 'RE-INSPEKSI'],
+    REJECTED:    ['sp-rej', 'DITOLAK'],
+    COMPLETED:   ['sp-cmp', 'SELESAI'],
+  };
+  const [cls, label] = map[u] ?? ['sp-new', u || '—'];
+  return `<span class="spill ${cls}">${label}</span>`;
+}
+
+async function showDetail(id) {
+  $('mdTitle').textContent = 'Memuat Detail...';
+  $('mdBody').innerHTML = '<div style="text-align:center;padding:2rem"><div class="big-spin" style="margin:0 auto"></div></div>';
+  $('detailModal').style.display = 'flex';
+
+  try {
+    const res = await fetch(`${BASE}/qc/inspections/${id}`, { headers: auth() });
+    if (!res.ok) throw new Error('Gagal mengambil data.');
+    const json = await res.json();
+    const r = json.data ?? json;
+
+    const statusVal = typeof r.status === 'object' ? r.status?.value : r.status;
+    $('mdTitle').textContent = `Detail Inspeksi — ${r.roll?.roll_code ?? '-'}`;
+
+    const clientName = r.roll?.inspection_request?.client?.client_name ?? '—';
+    const opk = r.roll?.inspection_request?.opk ?? '—';
+    const lot = r.roll?.batch_number ?? '—';
+    const machine = r.roll?.machine?.machine_name ?? '—';
+    const yarn = r.yarn_name ?? '—';
+    const setting = r.roll?.inspection_request?.setting?.setting_name ?? '—';
+    const operator = r.operator?.name ?? '—';
+    const shiftVal = r.shift?.value ?? r.shift ?? '—';
+    const shiftMap = { pagi: 'Pagi', siang: 'Siang', malam: 'Malam' };
+    const shiftText = shiftMap[String(shiftVal).toLowerCase()] ?? shiftVal;
+    const scoreVal = parseFloat(r.score ?? 0).toFixed(2);
+    const weight = r.weight_kg != null && r.weight_kg !== '' ? `${parseFloat(r.weight_kg).toFixed(2)} KG` : '—';
+    const length = r.length_meter != null && r.length_meter !== '' ? `${parseFloat(r.length_meter).toFixed(1)} m` : '—';
+    const gramasi = r.gramasi ?? '—';
+    const lebar = r.lebar != null && r.lebar !== '' ? `${parseFloat(r.lebar).toFixed(1)} inci` : '—';
+    const pot1 = r.potongan_1_kg != null && r.potongan_1_kg !== '' ? `${parseFloat(r.potongan_1_kg).toFixed(2)} KG` : '—';
+    const pot2 = r.potongan_2_kg != null && r.potongan_2_kg !== '' ? `${parseFloat(r.potongan_2_kg).toFixed(2)} KG` : '—';
+    const qcName = r.roll?.inspection_request?.qc?.name ?? '—';
+    const validatorName = r.validator?.name ?? '—';
+    const ketVisual = r.keterangan_visual ?? '—';
+    const catatan = r.catatan ?? '—';
+
+    const gradeHtml = resultHtml(r.result);
+    const defects = r.defects ?? [];
+    let defectsHtml = '';
+    if (defects.length === 0) {
+      defectsHtml = '<div style="color:var(--muted); font-size:.8rem; padding:.25rem 0">Tidak ada cacat yang dicatat.</div>';
+    } else {
+      defectsHtml = `<table style="font-size:.78rem; width:100%; border-collapse:collapse; margin-top:.5rem">
+        <thead>
+          <tr style="background:var(--surface2)">
+            <th style="padding:.4rem; font-size:.65rem">Cacat</th>
+            <th style="padding:.4rem; font-size:.65rem">Posisi</th>
+            <th style="padding:.4rem; font-size:.65rem">Poin</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${defects.map(d => {
+            const name = d.defect_type?.defect_name ?? d.defect_type_name ?? 'Cacat';
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.4rem">${esc(name)}</td>
+              <td style="padding:.4rem">${esc(formatDefectPosition(d.position_meter))}</td>
+              <td style="padding:.4rem">${d.point} pt</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    $('mdBody').innerHTML = `
+      <div class="detail-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:.85rem 1.2rem;">
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">OPK:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(opk)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Lot (Batch):</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(lot)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Customer:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(clientName)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Mesin:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(machine)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">QC Inspector:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(operator)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Shift:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(shiftText)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Jenis Benang:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(yarn)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Setting:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(setting)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: center; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Grade:</span><div>${gradeHtml}</div></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Score:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${scoreVal}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Panjang:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(length)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Gramasi:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(gramasi)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Lebar:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(lebar)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Berat (KG):</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(weight)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Potongan 1:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(pot1)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Potongan 2:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(pot2)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">QC Supervisor:</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(qcName)}</span></div>
+        <div class="detail-item" style="display: flex; align-items: baseline; gap: 0.4rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Validator (QC):</span><span class="detail-val" style="font-size:.85rem; font-weight:700; color:var(--text)">${esc(validatorName)}</span></div>
+        <div class="detail-item" style="grid-column: span 2; display: flex; flex-direction: column; gap: 0.2rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Keterangan Visual:</span><span class="detail-val" style="font-size:.85rem; font-weight:600; color:var(--text); white-space:pre-wrap">${esc(ketVisual)}</span></div>
+        <div class="detail-item" style="grid-column: span 2; display: flex; flex-direction: column; gap: 0.2rem;"><span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Catatan:</span><span class="detail-val" style="font-size:.85rem; font-weight:600; color:var(--text); white-space:pre-wrap">${esc(catatan)}</span></div>
+      </div>
+      <div style="margin-top:.5rem; border-top:1px solid var(--border); padding-top:.75rem">
+        <span class="detail-lbl" style="font-size:.65rem; font-weight:700; text-transform:uppercase; color:var(--muted)">Daftar Cacat (${defects.length})</span>
+        ${defectsHtml}
+      </div>
+    `;
+  } catch (err) {
+    $('mdBody').innerHTML = `<div style="color:var(--danger); text-align:center; padding:2rem">Gagal memuat detail inspeksi: ${err.message}</div>`;
+  }
 }
 
 // ── CSV Export ────────────────────────────────────────────
@@ -428,7 +587,7 @@ async function refresh() {
 $('btnApply').addEventListener('click', refresh);
 $('btnReset').addEventListener('click', () => {
   ['fFrom','fTo'].forEach(id => $(id).value = '');
-  ['fMachine','fClient','fOperator','fResult'].forEach(id => $(id).value = '');
+  ['fMachine','fClient','fOperator','fResult','fOpk'].forEach(id => $(id).value = '');
   refresh();
 });
 

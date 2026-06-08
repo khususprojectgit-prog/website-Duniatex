@@ -31,6 +31,7 @@ class InspectionRequestController extends Controller
        $data = $request->validate([
     'client_id'    => ['required', 'exists:clients,id'],
     'request_code' => ['required', 'string', 'max:50', 'unique:inspection_requests,request_code'],
+    'opk'          => ['required', 'string', 'max:50'],
     'notes'        => ['nullable', 'string'],
 ]);
 
@@ -60,7 +61,7 @@ $ir = InspectionRequest::create($data);
     public function show(InspectionRequest $inspectionRequest): JsonResponse
     {
         return $this->success('Inspection request retrieved.',
-            $inspectionRequest->load('client', 'qc', 'fabricRolls.inspection.defects', 'fabricRolls.machine')
+            $inspectionRequest->load('client', 'qc', 'fabricRolls.latestInspection.defects', 'fabricRolls.machine')
         );
     }
 
@@ -70,6 +71,7 @@ $ir = InspectionRequest::create($data);
         $data = $request->validate([
             'client_id'    => ['sometimes', 'exists:clients,id'],
             'request_code' => ['sometimes', 'string', 'max:50', "unique:inspection_requests,request_code,{$inspectionRequest->id}"],
+            'opk'          => ['sometimes', 'string', 'max:50'],
             'status'       => ['sometimes', Rule::in(['NEW', 'IN_PROGRESS', 'COMPLETED'])],
             'notes'        => ['nullable', 'string'],
         ]);

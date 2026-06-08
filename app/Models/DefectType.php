@@ -10,8 +10,20 @@ class DefectType extends Model
     use HasFactory;
 
     protected $fillable = [
-        'defect_name', 'default_point', 'description',
+        'defect_name', 'category', 'default_point', 'description',
     ];
+
+    /** Defect types that record position as meter range (e.g. 10-25). */
+    public const RANGE_POSITION_NAMES = ['patah jarum', 'bopeng'];
+
+    public static function usesRangePosition(?string $defectName): bool
+    {
+        if ($defectName === null || $defectName === '') {
+            return false;
+        }
+
+        return in_array(strtolower(trim($defectName)), self::RANGE_POSITION_NAMES, true);
+    }
 
     public function defects()
     {

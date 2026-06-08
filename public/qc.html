@@ -1,180 +1,897 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>QC Dashboard — Duniatex</title>
-<meta name="description" content="Quality Control dashboard sistem inspeksi kain Duniatex"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css"/>
-<style>
-main{padding:1.1rem;max-width:740px;margin:0 auto}
-.hl{display:flex;align-items:center;gap:.7rem}
-.lm{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 12px var(--accent-glow);flex-shrink:0}
-.bn{font-size:.95rem;font-weight:800;color:var(--text)}
-.br{font-size:.68rem;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
-.un{font-size:.78rem;color:var(--muted)}
-.hr{display:flex;align-items:center;gap:.65rem}
-.btn-out{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);border-radius:var(--radius-sm);font:.78rem 'Inter';font-weight:600;font-family:inherit;padding:.45rem .9rem;cursor:pointer;transition:background .2s}
-.btn-out:hover{background:rgba(220,38,38,.16)}
-.btn-ref{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-sm);font:.78rem 'Inter',sans-serif;padding:.38rem .8rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;box-shadow:var(--shadow)}
-.btn-ref:hover{border-color:var(--accent);color:var(--accent)}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QC Inspector Dashboard — Duniatex</title>
+  <meta name="description" content="Dashboard QC Inspector untuk inspeksi kain PT Duniatex"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    main { padding: 1.25rem; max-width: 660px; margin: 0 auto; }
+
+    /* ── Active Inspection Banner ── */
+    #activeBanner {
+      display: none;
+      background: linear-gradient(135deg,var(--accent-light),rgba(124,58,237,.06));
+      border: 1px solid rgba(79,70,229,.25);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: var(--shadow);
+    }
+    #activeBanner:hover { border-color: var(--accent); background: rgba(79,70,229,.1); }
+    .banner-inner { display: flex; align-items: center; gap: .85rem; }
+    .banner-pulse {
+      width: 11px; height: 11px;
+      background: var(--accent); border-radius: 50%; flex-shrink: 0;
+      box-shadow: 0 0 0 0 var(--accent-glow);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 var(--accent-glow)} 50%{box-shadow:0 0 0 7px rgba(79,70,229,0)} }
+    .banner-text { flex: 1; }
+    .banner-title { font-size: .9rem; font-weight: 700; color: var(--accent); }
+    .banner-sub   { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+    .banner-arrow { color: var(--accent); font-size: 1.1rem; }
+
+    /* ── Tab Filters ── */
+    .filter-bar {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;
+    }
+    .filter-tabs {
+      display: flex; gap: .5rem;
+    }
+    .ftab {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: .55rem 1rem;
+      font-size: .82rem; font-weight: 700; color: var(--muted);
+      cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: .4rem;
+      font-family: inherit;
+    }
+    .ftab.active {
+      background: var(--accent-light); border-color: var(--accent); color: var(--accent);
+    }
+    .ftab-count {
+      background: rgba(79,70,229,0.12); color: var(--accent);
+      border-radius: 12px; padding: .1rem .45rem; font-size: .7rem; font-weight: 800;
+    }
+    .ftab.active .ftab-count {
+      background: var(--accent); color: #fff;
+    }
+    .btn-ref {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); border-radius: var(--radius-sm);
+      font: .78rem 'Inter', sans-serif; padding: .45rem .85rem;
+      cursor: pointer; transition: all .2s; display: flex;
+      align-items: center; gap: .35rem; box-shadow: var(--shadow);
+    }
+    .btn-ref:hover { border-color: var(--accent); color: var(--accent); }
+
+    .roll-count {
+      background: var(--accent-light); color: var(--accent);
+      border: 1px solid rgba(79,70,229,.2);
+      border-radius: 20px; font-size: .72rem; font-weight: 700;
+      padding: .15rem .55rem;
+    }
+
+    /* ── Roll Cards ── */
+    .roll-list { display: flex; flex-direction: column; gap: .75rem; }
+    .roll-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.15rem;
+      transition: all .2s; position: relative; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .roll-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+      opacity: 0; transition: opacity .2s;
+    }
+    .roll-card:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .roll-card:hover::before { opacity: 1; }
+    .roll-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .85rem; }
+    .roll-code { font-size: 1.1rem; font-weight: 800; letter-spacing: -.3px; color: var(--text); }
+    .roll-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .75rem; margin-bottom: 1rem; }
+    .meta-label { font-size: .67rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .meta-value { font-size: .875rem; font-weight: 600; color: var(--text); margin-top: .1rem; }
+    .btn-start {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      font-size: .95rem; font-weight: 700; font-family: inherit;
+      padding: .85rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      display: flex; align-items: center; justify-content: center; gap: .45rem;
+    }
+    .btn-start:active { transform: scale(.98); opacity: .9; }
+    .btn-start:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    
+    #modalStart { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(4px); z-index:150; align-items:center; justify-content:center; padding:1rem; }
+    #modalStart.open { display:flex; }
+    .start-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; max-width:420px; width:100%; box-shadow:var(--shadow-md); max-height:90vh; overflow-y:auto; }
+    .start-title { font-size:1rem; font-weight:800; margin-bottom:.25rem; }
+    .start-sub { font-size:.8rem; color:var(--muted); margin-bottom:1rem; }
+    .start-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: 1.2rem; padding: .85rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: left; }
+    .info-item { display: flex; flex-direction: column; }
+    .info-item label { font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0px !important; }
+    .info-item .info-val { font-size: .8rem; font-weight: 700; color: var(--text); margin-top: .15rem; }
+    .shift-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; margin-bottom:1rem; }
+    .shift-btn { border:2px solid var(--border); background:var(--surface2); border-radius:var(--radius-sm); padding:.65rem .4rem; font-size:.78rem; font-weight:700; cursor:pointer; transition:all .15s; }
+    .shift-btn.active { border-color:var(--accent); background:var(--accent-light); color:var(--accent); }
+    .start-field { margin-bottom:.75rem; }
+    .start-field label { display:block; font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; }
+    .start-field input { width:100%; padding:.65rem .75rem; border:1px solid var(--border); border-radius:var(--radius-sm); font:inherit; }
+    .start-acts { display:flex; gap:.5rem; margin-top:1rem; }
+    .start-acts button { flex:1; padding:.75rem; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; border:none; }
+    .btn-start-cancel { background:var(--surface2); color:var(--text); border:1px solid var(--border)!important; }
+    .btn-start-go { background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; }
+    .last-update { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 1.5rem; }
+    .btn-ref.spinning .refresh-icon { animation: spin .6s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .refresh-icon { display: inline-block; }
+
+    /* ── Search bar ── */
+    .roll-search-wrap {
+      position: relative; margin-bottom: 1.1rem;
+    }
+    .roll-search-wrap .rs-icon {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      font-size: .9rem; color: var(--muted); pointer-events: none;
+    }
+    #rollSearch {
+      width: 100%; padding: .65rem .75rem .65rem 2.3rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font: .88rem 'Inter', sans-serif; color: var(--text);
+      background: var(--surface); box-shadow: var(--shadow);
+      transition: border-color .2s; box-sizing: border-box;
+    }
+    #rollSearch:focus { outline: none; border-color: var(--accent); }
+    #rollSearch::placeholder { color: var(--muted); }
+
+    /* ── Customer cards ── */
+    .customer-grid { display: flex; flex-direction: column; gap: .75rem; }
+    .customer-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.1rem 1.2rem;
+      display: flex; align-items: center; gap: 1rem;
+      cursor: pointer; transition: all .2s;
+      box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .customer-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      opacity: 0; transition: opacity .2s;
+    }
+    .customer-card:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .customer-card:hover::before { opacity: 1; }
+    .cust-avatar {
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: #fff;
+    }
+    .cust-info { flex: 1; min-width: 0; }
+    .cust-name {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cust-sub { font-size: .75rem; color: var(--muted); margin-top: .15rem; }
+    .cust-badge {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: .3rem;
+    }
+    .cust-count {
+      background: var(--accent); color: #fff;
+      border-radius: 20px; font-size: .72rem; font-weight: 700;
+      padding: .2rem .65rem; white-space: nowrap;
+    }
+    .cust-pending-count {
+      background: rgba(239,68,68,.12); color: #ef4444;
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 20px; font-size: .68rem; font-weight: 700;
+      padding: .15rem .55rem; white-space: nowrap;
+    }
+    .cust-arrow { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; transition: transform .2s; }
+    .customer-card:hover .cust-arrow { transform: translateX(3px); color: var(--accent); }
+
+    /* ── Customer search ── */
+    .cust-search-wrap {
+      position: relative; margin-bottom: 1.1rem;
+    }
+    .cust-search-wrap .cs-icon {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      font-size: .9rem; color: var(--muted); pointer-events: none;
+    }
+    #customerSearch {
+      width: 100%; padding: .65rem .75rem .65rem 2.3rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font: .88rem 'Inter', sans-serif; color: var(--text);
+      background: var(--surface); box-shadow: var(--shadow);
+      transition: border-color .2s; box-sizing: border-box;
+    }
+    #customerSearch:focus { outline: none; border-color: var(--accent); }
+    #customerSearch::placeholder { color: var(--muted); }
+
+    /* ── Inner view ── */
+    #innerView { display: none; }
+    #outerView { display: block; }
+    .inner-back-bar {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: 1.1rem;
+    }
+    .btn-back {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: .45rem .85rem;
+      font: .82rem 'Inter', sans-serif; font-weight: 700;
+      color: var(--accent); cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: .35rem;
+    }
+    .btn-back:hover { background: var(--accent-light); border-color: rgba(79,70,229,.3); }
+    .inner-cust-name {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .inner-roll-count {
+      background: var(--accent); color: #fff;
+      border-radius: 20px; font-size: .7rem; font-weight: 700;
+      padding: .2rem .6rem; flex-shrink: 0;
+    }
+
+    .no-result {
+      text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: .9rem;
+    }
+    .no-result-icon { font-size: 2rem; margin-bottom: .5rem; }
+  </style>
 </head>
 <body>
 
 <header>
-  <div class="hl">
-    <div class="lm">🔍</div>
+  <div class="header-left">
+    <img src="sources/logo-duniatex.jpg" alt="Logo Duniatex" style="width:38px;height:38px;border-radius:10px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 12px var(--accent-glow)"/>
     <div>
-      <div class="bn">Duniatex <span style="font-size:.7rem;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;border-radius:6px;padding:.12rem .5rem;vertical-align:middle;font-weight:700;letter-spacing:.04em">QC</span></div>
-      <div class="un" id="uname">Quality Control</div>
+      <div class="brand-name">Duniatex <span class="badge-role">QC Inspector</span></div>
+      <div class="user-name" id="userName">—</div>
     </div>
   </div>
-  <div class="hr">
-    <button class="btn-out" id="logoutBtn">Keluar</button>
+  <div class="header-right">
+    <button class="btn-logout" id="logoutBtn">Keluar</button>
   </div>
 </header>
 
 <main>
-  <div class="filter-bar">
-    <div class="filter-tabs" id="filterTabs">
-      <button class="ftab active" data-status="SUBMITTED">Menunggu Validasi <span class="ftab-count" id="cntSub">—</span></button>
-      <button class="ftab" data-status="VALIDATED">Validated <span class="ftab-count" id="cntVal">—</span></button>
-      <button class="ftab" data-status="REJECTED">Rejected <span class="ftab-count" id="cntRej">—</span></button>
+
+  <!-- Active inspection resume banner -->
+  <div id="activeBanner" role="button" tabindex="0">
+    <div class="banner-inner">
+      <div class="banner-pulse"></div>
+      <div class="banner-text">
+        <div class="banner-title">Inspeksi Sedang Berjalan</div>
+        <div class="banner-sub" id="bannerSub">Klik untuk melanjutkan</div>
+      </div>
+      <div class="banner-arrow">→</div>
     </div>
-    <button class="btn-ref" id="refreshBtn">⟳ Refresh</button>
   </div>
-  <div id="content"></div>
+
+  <!-- Outer: section bar -->
+  <div class="filter-bar" id="outerBar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="ftab active" data-status="NEW">Antrean <span class="ftab-count" id="cntNew">—</span></button>
+      <button class="ftab" data-status="PENDING">Re-inspeksi <span class="ftab-count" id="cntPnd">—</span></button>
+      <button class="ftab" data-status="HISTORY">Riwayat <span class="ftab-count" id="cntHistory">—</span></button>
+    </div>
+    <button class="btn-ref" id="refreshBtn">
+      <span class="refresh-icon">⟳</span> Refresh
+    </button>
+  </div>
+
+  <!-- OUTER VIEW: daftar customer -->
+  <div id="outerView">
+    <div class="cust-search-wrap" id="custSearchWrap" style="display:none">
+      <span class="cs-icon">🔍</span>
+      <input id="customerSearch" type="text" placeholder="Cari nama customer…" autocomplete="off"/>
+    </div>
+    <div id="customerList"></div>
+  </div>
+
+  <!-- INNER VIEW: roll per customer -->
+  <div id="innerView">
+    <div class="inner-back-bar">
+      <button class="btn-back" id="btnBack">← Kembali</button>
+      <div class="inner-cust-name" id="innerCustName"></div>
+      <span class="inner-roll-count" id="innerRollCount"></span>
+    </div>
+    <div class="roll-search-wrap">
+      <span class="rs-icon">🔍</span>
+      <input id="rollSearch" type="text" placeholder="Cari kode roll…" autocomplete="off"/>
+    </div>
+    <div id="rollList"></div>
+  </div>
+
+  <div class="last-update" id="lastUpdate" style="display:none"></div>
+
 </main>
+
+<div id="modalStart">
+  <div class="start-box">
+    <div class="start-title" id="startRollTitle">Mulai Inspeksi</div>
+    <div class="start-sub">Isi data kain sebelum mencatat cacat.</div>
+    <div class="start-info-grid">
+      <div class="info-item"><label>OPK</label><span class="info-val" id="mInfoOpk">—</span></div>
+      <div class="info-item"><label>Op. Produksi</label><span class="info-val" id="mInfoOp">—</span></div>
+      <div class="info-item"><label>Nomer Roll</label><span class="info-val mono" id="mInfoRoll">—</span></div>
+      <div class="info-item"><label>Req. Benang</label><span class="info-val" id="mInfoYarn">—</span></div>
+      <div class="info-item"><label>Req. Setting</label><span class="info-val" id="mInfoSetting">—</span></div>
+      <div class="info-item" style="grid-column: span 2;"><label>Catatan Admin</label><span class="info-val" id="mInfoNotes" style="font-weight: 500; font-size: .78rem; white-space: pre-wrap;">—</span></div>
+    </div>
+    <div class="start-field">
+      <label>Shift kerja</label>
+      <div class="shift-row">
+        <button type="button" class="shift-btn" data-shift="pagi">Pagi</button>
+        <button type="button" class="shift-btn" data-shift="siang">Siang</button>
+        <button type="button" class="shift-btn" data-shift="malam">Malam</button>
+      </div>
+    </div>
+    <div class="start-field"><label>Nama QC</label><input id="stQc" type="text" maxlength="100" placeholder="cth: QC Budi"/></div>
+    <div id="startErr" style="color:var(--danger);font-size:.82rem;display:none;margin-top:.25rem"></div>
+    <div class="start-acts">
+      <button type="button" class="btn-start-cancel" id="startCancel">Batal</button>
+      <button type="button" class="btn-start-go" id="startConfirm">Mulai</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
 <script>
-const BASE=`http://127.0.0.1:8000/api`;
-const token=localStorage.getItem('token');
-const role=localStorage.getItem('role');
-if(!token) location.replace('index.html');
-if(role&&role!=='qc'&&role!=='admin') location.replace({operator:'dashboard.html',admin:'admin.html'}[role]||'index.html');
-document.getElementById('uname').textContent=localStorage.getItem('user_name')||'QC';
+  const BASE  = 'http://127.0.0.1:8000/api';
+  const token = localStorage.getItem('token');
+  if (!token) window.location.replace('index.html');
 
-const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const auth=()=>({Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json'});
-let tt;
-function toast(m,c='',d=2800){const e=document.getElementById('toast');e.textContent=m;e.className=c?`show ${c}`:'show';clearTimeout(tt);tt=setTimeout(()=>e.className='',d);}
-
-let currentStatus='SUBMITTED';
-
-function showSkeleton(){
-  document.getElementById('content').innerHTML=`
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Roll</th><th>Mesin</th><th>Klien</th><th>Operator</th><th>Poin</th><th>Score</th><th>Result</th><th>Status</th><th></th></tr></thead>
-      <tbody>${[1,2,3,4].map(()=>`<tr>${Array(9).fill(`<td><div class="sk" style="height:14px;width:80%;border-radius:4px"></div></td>`).join('')}</tr>`).join('')}</tbody>
-    </table></div>`;
-}
-
-async function load(status){
-  currentStatus=status;
-  showSkeleton();
-  try{
-    const res=await fetch(`${BASE}/qc/inspections?status=${status}`,{headers:auth()});
-    if(res.status===401){localStorage.clear();location.replace('index.html');return;}
-    const data=await res.json();
-    const list=Array.isArray(data)?data:(data.data??[]);
-    const arr=Array.isArray(list)?list:(list.data??[]);
-    render(arr,status);
-    // update counts for current tab
-    const cntMap={SUBMITTED:'cntSub',VALIDATED:'cntVal',REJECTED:'cntRej'};
-    if(cntMap[status]) document.getElementById(cntMap[status]).textContent=arr.length;
-  }catch(_){
-    document.getElementById('content').innerHTML=`<div class="state-box"><div class="si">⚠️</div><h3>Gagal Memuat Data</h3><p>Periksa koneksi ke server backend.</p></div>`;
+  // Role guard
+  const _role = localStorage.getItem('role');
+  if (_role && _role !== 'qc') {
+    window.location.replace({ admin: 'admin.html', qc: 'qc.html' }[_role] || 'index.html');
   }
-}
 
-function pillHtml(s){
-  const u=(s||'').toUpperCase();
-  const map = {
-    NEW:         ['sp-new', 'NEW'],
-    IN_PROGRESS: ['sp-ip',  'IN PROGRESS'],
-    SUBMITTED:   ['sp-sub', 'SUBMITTED'],
-    VALIDATED:   ['sp-val', 'VALIDATED'],
-    PENDING:     ['sp-pnd', 'PENDING'],
-    REJECTED:    ['sp-rej', 'REJECTED'],
-    COMPLETED:   ['sp-cmp', 'COMPLETED'],
-  };
-  const [cls, label] = map[u] ?? ['sp-new', u || '—'];
-  return `<span class="spill ${cls}">${label}</span>`;
-}
+  // User display
+  const uname = localStorage.getItem('user_name');
+  if (uname) document.getElementById('userName').textContent = uname;
 
-function resultHtml(r){
-  const u=(r||'').toUpperCase();
-  if(u==='PASS') return `<span class="res-pass">● PASS</span>`;
-  if(u==='FAIL') return `<span class="res-fail">● FAIL</span>`;
-  return `<span style="color:var(--mu);font-size:.8rem">—</span>`;
-}
+  // ── Helpers ─────────────────────────────────────────
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-function render(list,status){
-  const el=document.getElementById('content');
-  if(!list.length){
-    const msgs={
-      SUBMITTED:'Tidak ada inspeksi yang menunggu validasi.',
-      VALIDATED:'Belum ada inspeksi yang divalidasi.',
-      REJECTED: 'Belum ada inspeksi yang ditolak.',
+  function auth() {
+    return { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' };
+  }
+
+  let toastT;
+  function toast(msg, type = '', dur = 2800) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = type ? `show ${type}` : 'show';
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.className = '', dur);
+  }
+
+  // ── Active inspection check ──────────────────────────
+  async function checkActiveInspection() {
+    try {
+      const res  = await fetch(`${BASE}/qc/my-inspections?status=IN_PROGRESS`, { headers: auth() });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = Array.isArray(data)           ? data
+                 : Array.isArray(data.data)       ? data.data
+                 : Array.isArray(data.data?.data) ? data.data.data
+                 : [];
+      const active = list[0] ?? null;
+      if (!active) {
+        document.getElementById('activeBanner').style.display = 'none';
+        return;
+      }
+
+      localStorage.setItem('inspection_id', active.id);
+      const banner  = document.getElementById('activeBanner');
+      const rollCode = active.roll?.roll_code ?? `#${active.id}`;
+      document.getElementById('bannerSub').textContent =
+        `Roll: ${rollCode} — Klik untuk melanjutkan inspeksi`;
+      banner.style.display = 'block';
+    } catch (_) {}
+  }
+
+  document.getElementById('activeBanner').addEventListener('click', () => {
+    window.location.href = 'inspection.html';
+  });
+  document.getElementById('activeBanner').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') window.location.href = 'inspection.html';
+  });
+
+  // ── Skeleton ─────────────────────────────────────────
+  function showSkeleton() {
+    document.getElementById('customerList').innerHTML = [1,2,3].map(() => `
+      <div class="sk-card" style="margin-bottom:0.75rem;padding:1.15rem;border:1px solid var(--border);border-radius:var(--radius)">
+        <div class="skeleton sk-line w-60" style="height:14px;border-radius:4px;margin-bottom:8px"></div>
+        <div class="skeleton sk-line w-40" style="height:12px;border-radius:4px"></div>
+      </div>`).join('');
+    document.getElementById('lastUpdate').style.display = 'none';
+  }
+
+  // ── Load rolls ───────────────────────────────────────
+  let currentStatus = window.location.hash.replace('#', '') === 'HISTORY' ? 'HISTORY' : 'NEW';
+  let _allRolls    = [];   // semua roll tersedia
+  let _allHistory  = [];   // semua riwayat inspeksi
+  let _groups      = {};   // grouped by customer name
+  let _colorMap    = {};   // nama customer → [c1, c2, emoji]
+
+  // Set active class on filter tab button based on initial status
+  document.querySelectorAll('.ftab').forEach(b => {
+    if (b.dataset.status === currentStatus) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+
+  async function loadRolls() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.classList.add('spinning');
+    showSkeleton();
+
+    try {
+      const [rollsRes, inspectionsRes] = await Promise.all([
+        fetch(`${BASE}/qc/my-rolls`, { headers: auth() }),
+        fetch(`${BASE}/qc/my-inspections`, { headers: auth() })
+      ]);
+
+      if (rollsRes.status === 401 || inspectionsRes.status === 401) {
+        localStorage.clear();
+        window.location.replace('index.html');
+        return;
+      }
+
+      const rollsData = await rollsRes.json();
+      const inspectionsData = await inspectionsRes.json();
+
+      const rolls = Array.isArray(rollsData) ? rollsData
+                  : Array.isArray(rollsData.data) ? rollsData.data
+                  : Array.isArray(rollsData.data?.data) ? rollsData.data.data
+                  : [];
+
+      const inspections = Array.isArray(inspectionsData) ? inspectionsData
+                        : Array.isArray(inspectionsData.data) ? inspectionsData.data
+                        : Array.isArray(inspectionsData.data?.data) ? inspectionsData.data.data
+                        : [];
+
+      // Update count badges
+      const cntNew = rolls.filter(r => (r.status || '').toUpperCase() === 'NEW').length;
+      const cntPnd = rolls.filter(r => (r.status || '').toUpperCase() === 'PENDING').length;
+      document.getElementById('cntNew').textContent = cntNew;
+      document.getElementById('cntPnd').textContent = cntPnd;
+      document.getElementById('cntHistory').textContent = inspections.length;
+
+      _allRolls = rolls;
+      _allHistory = inspections;
+
+      if (currentStatus === 'HISTORY') {
+        renderRolls(inspections);
+      } else {
+        renderRolls(rolls);
+      }
+
+      // Update last update timestamp
+      const lu = document.getElementById('lastUpdate');
+      lu.textContent = `Diperbarui: ${new Date().toLocaleTimeString('id-ID')}`;
+      lu.style.display = 'block';
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById('customerList').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">⚠️</div>
+          <h3>Gagal Memuat Data</h3>
+          <p>Tidak dapat terhubung ke server.<br>Pastikan backend berjalan dan coba refresh.</p>
+        </div>`;
+    } finally {
+      refreshBtn.classList.remove('spinning');
+    }
+  }
+
+  // ── Status pill helper ───────────────────────────────────
+  function rollStatusPill(status) {
+    const s = (status || '').toUpperCase();
+    const map = {
+      NEW:         ['pill-new', 'BARU'],
+      IN_PROGRESS: ['pill-ip',  'IN PROGRESS'],
+      SUBMITTED:   ['pill-sub', 'TAHAN'],
+      VALIDATED:   ['pill-val', 'LOLOS'],
+      PENDING:     ['pill-pnd', 'RE-INSPEKSI'],
     };
-    el.innerHTML=`<div class="state-box"><div class="si">${status==='SUBMITTED'?'✅':'📋'}</div><h3>${msgs[status]||'Tidak ada data.'}</h3></div>`;
-    return;
+    const [cls, label] = map[s] ?? ['pill-new', s];
+    return `<span class="status-pill ${cls}">${label}</span>`;
   }
-  const rows=list.map(i=>{
-    const roll=i.roll??{};
-    const machine=roll.machine??{};
-    const req=roll.request??roll.inspection_request??{};
-    const client=req.client??{};
-    const operator=i.operator??{};
-    const score=parseFloat(i.score??0).toFixed(2);
-    return `<tr>
-      <td><div class="tc">${esc(roll.roll_code??'—')}</div><div class="tm">${esc(roll.batch_number??'')}</div></td>
-      <td class="tc">${esc(machine.machine_name??'—')}</td>
-      <td class="tc">${esc(client.client_name??'—')}</td>
-      <td class="tc">${esc(operator.name??'—')}</td>
-      <td><span style="font-weight:700;color:var(--ac)">${esc(i.total_points??'—')}</span></td>
-      <td><span style="font-weight:700;font-variant-numeric:tabular-nums">${score}</span></td>
-      <td>${resultHtml(i.result)}</td>
-      <td>${pillHtml(i.status)}</td>
-      <td><button class="btn-detail" onclick="goDetail(${i.id})">Lihat Detail →</button></td>
-    </tr>`;
-  }).join('');
 
-  el.innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Roll Code</th><th>Mesin</th><th>Klien</th><th>Operator</th>
-      <th>Poin</th><th>Score</th><th>Result</th><th>Status</th><th></th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
-}
+  const COLORS = [
+    ['#4f46e5','#7c3aed','🏢'], ['#059669','#0d9488','🏭'],
+    ['#d97706','#b45309','🧶'], ['#dc2626','#b91c1c','👔'],
+    ['#7c3aed','#a21caf','🎯'], ['#0284c7','#0369a1','📦'],
+    ['#0891b2','#0e7490','🧵'], ['#16a34a','#15803d','🎨'],
+  ];
 
-function goDetail(id){
-  localStorage.setItem('qc_inspection_id',String(id));
-  location.href='qc-detail.html';
-}
+  // ── Build group map ───────────────────────────────────
+  function buildGroups(items) {
+    const groups = {};
+    items.forEach(item => {
+      const roll = currentStatus === 'HISTORY' ? (item.roll ?? {}) : item;
+      const name = roll.request?.client?.client_name
+                ?? roll.inspection_request?.client?.client_name
+                ?? 'Tanpa Customer';
+      if (!groups[name]) groups[name] = [];
+      groups[name].push(item);
+    });
+    const sorted = Object.keys(groups).sort();
+    sorted.forEach((name, i) => {
+      _colorMap[name] = COLORS[i % COLORS.length];
+    });
+    return groups;
+  }
 
-// Filter tabs
-document.getElementById('filterTabs').addEventListener('click',e=>{
-  const btn=e.target.closest('.ftab');
-  if(!btn) return;
-  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  load(btn.dataset.status);
-});
+  // ── OUTER VIEW: render customer cards ─────────────────
+  function showOuterView(query = '') {
+    document.getElementById('outerView').style.display = 'block';
+    document.getElementById('innerView').style.display = 'none';
+    document.getElementById('outerBar').style.display  = 'flex';
 
-document.getElementById('refreshBtn').addEventListener('click',()=>load(currentStatus));
-document.getElementById('logoutBtn').addEventListener('click',async()=>{
-  try{await fetch(`${BASE}/logout`,{method:'POST',headers:auth()});}catch(_){}
-  localStorage.clear();location.replace('index.html');
-});
+    const q    = query.trim().toLowerCase();
+    const keys = Object.keys(_groups).sort().filter(k => !q || k.toLowerCase().includes(q));
+    const container = document.getElementById('customerList');
+    container.innerHTML = '';
 
-// Auto-refresh every 45s
-setInterval(()=>load(currentStatus),45000);
-load('SUBMITTED');
+    if (keys.length === 0) {
+      container.innerHTML = `
+        <div class="no-result">
+          <div class="no-result-icon">🔍</div>
+          <div>Customer <strong>"${esc(query)}"</strong> tidak ditemukan</div>
+        </div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'customer-grid';
+
+    keys.forEach(name => {
+      const rolls   = _groups[name];
+      const [c1, c2, emoji] = _colorMap[name] ?? COLORS[0];
+
+      const card = document.createElement('div');
+      card.className = 'customer-card';
+      card.innerHTML = `
+        <style>.customer-card[data-name="${esc(name)}"]::before{background:linear-gradient(to bottom,${c1},${c2});}</style>
+        <div class="cust-avatar" style="background:linear-gradient(135deg,${c1},${c2})">${emoji}</div>
+        <div class="cust-info">
+          <div class="cust-name">${esc(name)}</div>
+          <div class="cust-sub">${rolls.length} roll menunggu inspeksi</div>
+        </div>
+        <div class="cust-badge">
+          <span class="cust-count" style="background:linear-gradient(135deg,${c1},${c2})">${rolls.length} roll</span>
+        </div>
+        <div class="cust-arrow">›</div>`;
+      card.setAttribute('data-name', name);
+      card.addEventListener('click', () => showInnerView(name));
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+  }
+
+  // ── INNER VIEW: render rolls per customer ──────────────
+  function showInnerView(customerName) {
+    document.getElementById('outerView').style.display = 'none';
+    document.getElementById('outerBar').style.display  = 'none';
+    document.getElementById('innerView').style.display = 'block';
+
+    const rolls = _groups[customerName] ?? [];
+    document.getElementById('innerCustName').textContent  = customerName;
+    document.getElementById('innerRollCount').textContent = `${rolls.length} roll`;
+    document.getElementById('rollSearch').value = '';
+
+    renderRollList(rolls, '');
+
+    document.getElementById('rollSearch').oninput = function() {
+      renderRollList(rolls, this.value);
+    };
+  }
+
+  // ── Build single history card ──────────────────────────
+  function buildHistoryCard(insp) {
+    const roll = insp.roll ?? {};
+    const status = (insp.status || '').toUpperCase();
+    const opk = roll.request?.opk ?? roll.inspection_request?.opk ?? '—';
+    const reqCode = roll.request?.request_code ?? roll.inspection_request?.request_code ?? '—';
+    const client = roll.request?.client?.client_name ?? roll.inspection_request?.client?.client_name ?? '';
+
+    const card = document.createElement('div');
+    card.className = 'roll-card';
+    card.id = `insp-card-${insp.id}`;
+    card.innerHTML = `
+      <div class="roll-top">
+        <div class="roll-code">${esc(roll.roll_code || '—')}</div>
+        ${rollStatusPill(status)}
+      </div>
+      <div class="roll-meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">OPK</div>
+          <div class="meta-value">${esc(opk)}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Hasil</div>
+          <div class="meta-value" style="font-weight:700;color:var(--accent)">Grade ${esc(insp.result || '—')}</div>
+        </div>
+        <div class="meta-item" style="grid-column:span 2">
+          <div class="meta-label">Order</div>
+          <div class="meta-value">${esc(reqCode)}${client ? ` · ${esc(client)}` : ''}</div>
+        </div>
+      </div>
+      <button class="btn-start" onclick="location.href='qc-detail.html?id=${insp.id}'" style="background:var(--accent-light);color:var(--accent);border:1px solid rgba(79,70,229,.2);box-shadow:none">
+        🔍 Lihat Detail
+      </button>`;
+    return card;
+  }
+
+  // ── Build single roll card ─────────────────────────────
+  function buildRollCard(roll) {
+    if (currentStatus === 'HISTORY') {
+      return buildHistoryCard(roll);
+    }
+    const status    = (roll.status || '').toUpperCase();
+    const isPending = status === 'PENDING';
+    const opk       = roll.request?.opk ?? roll.inspection_request?.opk ?? '—';
+    const reqCode   = roll.request?.request_code ?? roll.inspection_request?.request_code ?? '—';
+    const client    = roll.request?.client?.client_name ?? roll.inspection_request?.client?.client_name ?? '';
+
+    const card = document.createElement('div');
+    card.className = 'roll-card';
+    if (isPending) card.style.borderColor = 'rgba(239,68,68,.35)';
+    card.id = `roll-card-${roll.id}`;
+    card.innerHTML = `
+      <div class="roll-top">
+        <div class="roll-code">${esc(roll.roll_code)}</div>
+        ${rollStatusPill(status)}
+      </div>
+      ${isPending ? `<div style="font-size:.78rem;color:#ef4444;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem">⚠ Dikembalikan QC — perlu inspeksi ulang</div>` : ''}
+      <div class="roll-meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">OPK</div>
+          <div class="meta-value">${esc(opk)}</div>
+        </div>
+        <div class="meta-item" style="grid-column:span 2">
+          <div class="meta-label">Order</div>
+          <div class="meta-value">${esc(reqCode)}${client ? ` · ${esc(client)}` : ''}</div>
+        </div>
+      </div>
+      <button class="btn-start" id="start-${roll.id}" style="${isPending ? 'background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 4px 16px rgba(239,68,68,.28)' : ''}">
+        ${isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi'}
+      </button>`;
+    card.querySelector(`#start-${roll.id}`)
+        .addEventListener('click', () => openStartModal(roll, card.querySelector(`#start-${roll.id}`), isPending));
+    return card;
+  }
+
+  // ── Render roll list dengan filter ────────────────────
+  function renderRollList(rolls, query = '') {
+    const container = document.getElementById('rollList');
+    container.innerHTML = '';
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? rolls.filter(item => {
+          const r = currentStatus === 'HISTORY' ? (item.roll ?? {}) : item;
+          return (r.roll_code||'').toLowerCase().includes(q);
+        })
+      : rolls;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="no-result">
+          <div class="no-result-icon">🔍</div>
+          <div>Roll <strong>"${esc(query)}"</strong> tidak ditemukan</div>
+        </div>`;
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'roll-list';
+    filtered.forEach(roll => list.appendChild(buildRollCard(roll)));
+    container.appendChild(list);
+  }
+
+  // ── Render rolls entry point ───────────────────────────
+  function renderRolls(data) {
+    const filtered = currentStatus === 'HISTORY' ? data : data.filter(r => (r.status || '').toUpperCase() === currentStatus);
+    _groups   = buildGroups(filtered);
+
+    const custSearch = document.getElementById('custSearchWrap');
+    const custKeys = Object.keys(_groups);
+
+    if (custKeys.length > 0) {
+      custSearch.style.display = 'block';
+    } else {
+      custSearch.style.display = 'none';
+    }
+
+    if (filtered.length === 0) {
+      const msgs = {
+        NEW: 'Tidak ada roll dalam antrean saat ini.',
+        PENDING: 'Tidak ada roll yang perlu di-reinspeksi saat ini.',
+        HISTORY: 'Belum ada riwayat inspeksi.'
+      };
+      const icons = {
+        NEW: '✅',
+        PENDING: '📋',
+        HISTORY: '⏳'
+      };
+      document.getElementById('customerList').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">${icons[currentStatus] || '🔍'}</div>
+          <h3>${msgs[currentStatus] || 'Tidak ada data.'}</h3>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('customerSearch').value = '';
+    showOuterView();
+  }
+
+  // ── Start inspection modal ────────────────────────────
+  let pendingStart = null;
+  let selectedShift = '';
+
+  document.querySelectorAll('.shift-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedShift = btn.dataset.shift;
+    });
+  });
+
+  document.getElementById('startCancel').addEventListener('click', () => {
+    document.getElementById('modalStart').classList.remove('open');
+    if (pendingStart?.btn) {
+      pendingStart.btn.disabled = false;
+      pendingStart.btn.innerHTML = pendingStart.defaultLabel;
+    }
+    pendingStart = null;
+  });
+
+
+
+  function openStartModal(roll, btn, isPending = false) {
+    pendingStart = {
+      rollId: roll.id,
+      rollCode: roll.roll_code,
+      btn,
+      isPending,
+      defaultLabel: isPending ? '↺&nbsp; Mulai Inspeksi Ulang' : '▶&nbsp; Mulai Inspeksi',
+    };
+    selectedShift = '';
+    document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('startRollTitle').textContent = `Mulai — ${roll.roll_code}`;
+
+    document.getElementById('mInfoOpk').textContent  = roll.request?.opk ?? roll.inspection_request?.opk ?? '—';
+    document.getElementById('mInfoOp').textContent   = roll.assigned_operator?.name ?? roll.operator?.name ?? '—';
+    document.getElementById('mInfoRoll').textContent = roll.roll_code;
+    document.getElementById('mInfoYarn').textContent = roll.request?.yarn_type?.yarn_name ?? roll.inspection_request?.yarn_type?.yarn_name ?? '—';
+    document.getElementById('mInfoSetting').textContent = roll.request?.setting?.setting_name ?? roll.inspection_request?.setting?.setting_name ?? '—';
+    document.getElementById('mInfoNotes').textContent = roll.request?.notes ?? roll.inspection_request?.notes ?? '—';
+
+    document.getElementById('stQc').value      = roll.request?.qc?.name ?? roll.inspection_request?.qc?.name ?? '';
+
+    const err = document.getElementById('startErr');
+    err.style.display = 'none';
+    err.textContent   = '';
+    document.getElementById('modalStart').classList.add('open');
+  }
+
+  document.getElementById('startConfirm').addEventListener('click', submitStartInspection);
+
+  async function submitStartInspection() {
+    if (!pendingStart) return;
+    const err = document.getElementById('startErr');
+    const qc = document.getElementById('stQc').value.trim();
+
+    if (!selectedShift) {
+      err.textContent = 'Pilih shift kerja.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!qc) {
+      err.textContent = 'Nama QC wajib diisi.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('startConfirm');
+    btn.disabled = true;
+    btn.textContent = 'Memulai…';
+
+    try {
+      const res = await fetch(`${BASE}/qc/rolls/${pendingStart.rollId}/start`, {
+        method: 'POST',
+        headers: auth(),
+        body: JSON.stringify({
+          shift:        selectedShift,
+          qc_name:      qc,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        err.textContent = data.message || 'Gagal memulai inspeksi.';
+        err.style.display = 'block';
+        return;
+      }
+
+      const inspId = data.data?.id ?? data.id ?? data.inspection?.id;
+      if (inspId) localStorage.setItem('inspection_id', String(inspId));
+
+      document.getElementById('modalStart').classList.remove('open');
+      toast(pendingStart.isPending ? 'Inspeksi ulang dimulai!' : 'Inspeksi dimulai!', 'success', 1200);
+      setTimeout(() => window.location.href = 'inspection.html', 800);
+    } catch (_) {
+      err.textContent = 'Koneksi gagal. Coba lagi.';
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Mulai';
+      if (pendingStart?.btn) {
+        pendingStart.btn.disabled = false;
+        pendingStart.btn.innerHTML = pendingStart.defaultLabel;
+      }
+    }
+  }
+
+  // Filter tabs click listener
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.ftab');
+    if (!btn) return;
+    document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    document.getElementById('customerSearch').value = '';
+    window.location.hash = currentStatus;
+    if (currentStatus === 'HISTORY') {
+      renderRolls(_allHistory);
+    } else {
+      renderRolls(_allRolls);
+    }
+  });
+
+  // ── Logout ────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await fetch(`${BASE}/logout`, { method: 'POST', headers: auth() }); } catch(_) {}
+    localStorage.clear();
+    window.location.replace('index.html');
+  });
+
+  // ── Refresh ───────────────────────────────────────────
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    checkActiveInspection();
+    loadRolls();
+  });
+
+  // ── Auto-refresh every 45s ────────────────────────────
+  setInterval(loadRolls, 45_000);
+
+  // ── Tombol Kembali (inner → outer) ───────────────────
+  document.getElementById('btnBack').addEventListener('click', () => {
+    document.getElementById('rollSearch').value = '';
+    showOuterView(document.getElementById('customerSearch').value);
+  });
+
+  // ── Live search customer (outer view) ────────────────
+  document.getElementById('customerSearch').addEventListener('input', function () {
+    showOuterView(this.value);
+  });
+
+  // ── Init ──────────────────────────────────────────────
+  checkActiveInspection();
+  loadRolls();
 </script>
 </body>
 </html>

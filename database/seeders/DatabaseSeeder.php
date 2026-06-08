@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\DefectType;
 use App\Models\Machine;
 use App\Models\User;
+use App\Models\Gramasi;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,19 +30,9 @@ class DatabaseSeeder extends Seeder
         $qc = User::updateOrCreate(
             ['email' => 'qc@duniatex.com'],
             [
-                'name'     => 'QC Supervisor',
+                'name'     => 'QC Inspeksi',
                 'password' => Hash::make('password'),
                 'role'     => 'qc',
-                'status'   => 'active',
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'operator@duniatex.com'],
-            [
-                'name'     => 'Operator Lantai',
-                'password' => Hash::make('password'),
-                'role'     => 'operator',
                 'status'   => 'active',
             ]
         );
@@ -60,6 +51,8 @@ class DatabaseSeeder extends Seeder
             ['defect_name' => 'Slub',              'default_point' => 1, 'description' => 'Thick place in yarn.'],
             ['defect_name' => 'Tight End',         'default_point' => 2, 'description' => 'Overly tight warp yarn causing puckering.'],
             ['defect_name' => 'Contamination',     'default_point' => 3, 'description' => 'Foreign fibre contamination in fabric.'],
+            ['defect_name' => 'Patah Jarum',       'default_point' => 1, 'description' => 'Broken needle defect.'],
+            ['defect_name' => 'BOPENG',            'default_point' => 1, 'description' => 'Bopeng / open weave defect.'],
         ];
 
         foreach ($defectTypes as $dt) {
@@ -112,13 +105,25 @@ class DatabaseSeeder extends Seeder
             Client::updateOrCreate(['client_name' => $c['client_name']], $c);
         }
 
+        // ---------------------------------------------------------------
+        // Gramasis
+        // ---------------------------------------------------------------
+        $gramasis = [
+            ['range' => '140-145', 'description' => 'Gramasi standar untuk kain combed ringan.'],
+            ['range' => '145-150', 'description' => 'Gramasi standar untuk kain combed sedang.'],
+            ['range' => '150-155', 'description' => 'Gramasi standar untuk kain combed berat.'],
+        ];
+
+        foreach ($gramasis as $g) {
+            Gramasi::updateOrCreate(['range' => $g['range']], $g);
+        }
+
         $this->command->info('✅  Duniatex seed complete.');
         $this->command->table(
             ['Role', 'Email', 'Password'],
             [
                 ['Admin',    'admin@duniatex.com',    'password'],
                 ['QC',       'qc@duniatex.com',       'password'],
-                ['Operator', 'operator@duniatex.com', 'password'],
             ]
         );
     }

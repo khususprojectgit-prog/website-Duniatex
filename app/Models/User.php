@@ -59,5 +59,4 @@ class User extends Authenticatable
 
     public function isAdmin(): bool    { return $this->role === 'admin'; }
     public function isQC(): bool       { return $this->role === 'qc'; }
-    public function isOperator(): bool { return $this->role === 'operator'; }
 }

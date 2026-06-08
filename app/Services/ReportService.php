@@ -18,7 +18,7 @@ class ReportService
     public function inspectionSummary(array $filters = []): array
     {
         $query = Inspection::query()
-            ->whereIn('status', ['VALIDATED', 'REJECTED', 'SUBMITTED'])
+            ->whereIn('status', ['VALIDATED', 'REJECTED', 'SUBMITTED', 'QC_VALIDATED', 'RELEASED'])
             ->with('roll.request.client', 'operator');
 
         $this->applyInspectionFilters($query, $filters);
@@ -26,14 +26,16 @@ class ReportService
         $inspections = $query->get();
 
         $total = $inspections->count();
-        $pass  = $inspections->where('result', 'PASS')->count();
-        $fail  = $inspections->where('result', 'FAIL')->count();
+        $gradeA  = $inspections->where('result', 'A')->count();
+        $gradeB  = $inspections->where('result', 'B')->count();
+        $gradeBs = $inspections->where('result', 'BS')->count();
 
         return [
             'total_inspections' => $total,
-            'passed'            => $pass,
-            'failed'            => $fail,
-            'pass_rate'         => $total > 0 ? round(($pass / $total) * 100, 2) : 0,
+            'grade_a_count'     => $gradeA,
+            'grade_b_count'     => $gradeB,
+            'grade_bs_count'    => $gradeBs,
+            'grade_a_rate'      => $total > 0 ? round(($gradeA / $total) * 100, 2) : 0,
             'avg_score'         => round($inspections->avg('score') ?? 0, 2),
             'filters_applied'   => $filters,
         ];
@@ -80,11 +82,12 @@ class ReportService
             ->select(
                 'operator_id',
                 DB::raw('COUNT(*) as total'),
-                DB::raw("SUM(CASE WHEN result = 'PASS' THEN 1 ELSE 0 END) as passed"),
-                DB::raw("SUM(CASE WHEN result = 'FAIL' THEN 1 ELSE 0 END) as failed"),
+                DB::raw("SUM(CASE WHEN result = 'A' THEN 1 ELSE 0 END) as grade_a"),
+                DB::raw("SUM(CASE WHEN result = 'B' THEN 1 ELSE 0 END) as grade_b"),
+                DB::raw("SUM(CASE WHEN result = 'BS' THEN 1 ELSE 0 END) as grade_bs"),
                 DB::raw('AVG(score) as avg_score')
             )
-            ->whereIn('status', ['VALIDATED', 'SUBMITTED'])
+            ->whereIn('status', ['VALIDATED', 'SUBMITTED', 'QC_VALIDATED', 'RELEASED'])
             ->with('operator')
             ->groupBy('operator_id');
 
@@ -94,9 +97,10 @@ class ReportService
             'operator_id'   => $row->operator_id,
             'operator_name' => $row->operator?->name ?? 'N/A',
             'total'         => $row->total,
-            'passed'        => $row->passed,
-            'failed'        => $row->failed,
-            'pass_rate'     => $row->total > 0 ? round(($row->passed / $row->total) * 100, 2) : 0,
+            'grade_a'       => $row->grade_a,
+            'grade_b'       => $row->grade_b,
+            'grade_bs'      => $row->grade_bs,
+            'grade_a_rate'  => $row->total > 0 ? round(($row->grade_a / $row->total) * 100, 2) : 0,
             'avg_score'     => round($row->avg_score ?? 0, 2),
         ]);
     }
@@ -144,5 +148,56 @@ class ReportService
         if (! empty($filters['machine_id'])) {
             $query->whereHas('roll', fn ($q) => $q->where('machine_id', $filters['machine_id']));
         }
+    }
+
+    /**
+     * Machine Monitoring: active inspections, status, and issue counts.
+     */
+    public function machineMonitoring(): Collection
+    {
+        $machines = \App\Models\Machine::withCount(['machineIssues as active_issues_count' => function ($q) {
+            $q->where('status', 'OPEN');
+        }])
+            ->get();
+
+        return $machines->map(function ($machine) {
+            // Find active inspection (IN_PROGRESS) on this machine
+            $activeInspection = Inspection::whereHas('roll', function ($q) use ($machine) {
+                $q->where('machine_id', $machine->id);
+            })
+                ->where('status', \App\Enums\InspectionStatus::IN_PROGRESS->value)
+                ->with('roll.inspectionRequest.client', 'operator')
+                ->latest()
+                ->first();
+
+            // Find last resolved/completed inspection on this machine
+            $lastInspection = Inspection::whereHas('roll', function ($q) use ($machine) {
+                $q->where('machine_id', $machine->id);
+            })
+                ->where('status', '!=', \App\Enums\InspectionStatus::IN_PROGRESS->value)
+                ->with('roll.inspectionRequest.client')
+                ->latest()
+                ->first();
+
+            return [
+                'machine_id'          => $machine->id,
+                'machine_name'        => $machine->machine_name,
+                'status'              => $activeInspection ? 'RUNNING' : 'IDLE',
+                'active_issues'       => $machine->active_issues_count,
+                'active_inspection'   => $activeInspection ? [
+                    'inspection_id' => $activeInspection->id,
+                    'roll_code'     => $activeInspection->roll?->roll_code,
+                    'operator'      => $activeInspection->operator?->name,
+                    'client'        => $activeInspection->roll?->inspectionRequest?->client?->client_name,
+                    'opk'           => $activeInspection->roll?->inspectionRequest?->opk,
+                ] : null,
+                'last_inspection'     => $lastInspection ? [
+                    'inspection_id' => $lastInspection->id,
+                    'roll_code'     => $lastInspection->roll?->roll_code,
+                    'result'        => $lastInspection->result,
+                    'score'         => $lastInspection->score,
+                ] : null,
+            ];
+        });
     }
 }
