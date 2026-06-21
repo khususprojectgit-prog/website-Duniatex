@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.1"
+    }
+  },
+  "routes": [
+    {
+      "src": "/build/(.*)",
+      "dest": "/public/build/$1"
+    },
+    {
+      "src": "/(admin.html|admin.js|analytics.html|dashboard.html|favicon.ico|index.html|inspection.html|qc-detail.html|qc.html|robots.txt|scoring.js|shared.css|sources/.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+/vendor
+/node_modules
+.env
+.git
+.github
+.phpunit.result.cache
+tests
+docker-compose.yml
+Dockerfile
+.dockerignore
+00-laravel-deploy.sh
