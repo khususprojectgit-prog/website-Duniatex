@@ -1,0 +1,11 @@
+/vendor
+/node_modules
+/public/build
+.env
+.git
+.github
+.phpunit.result.cache
+tests
+docker-compose.yml
+Dockerfile
+.dockerignore
