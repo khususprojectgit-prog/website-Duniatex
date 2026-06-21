@@ -12,7 +12,7 @@ class Inspection extends Model
     use HasFactory;
 
     protected $fillable = [
-        'roll_id', 'manual_roll_number', 'operator_id', 'shift', 'length_meter', 'weight_kg', 'gramasi', 'lebar',
+        'roll_id', 'manual_roll_number', 'operator_id', 'production_operator_name', 'shift', 'length_meter', 'weight_kg', 'gramasi', 'lebar',
         'potongan_1_kg', 'potongan_2_kg', 'keterangan_visual', 'catatan', 'yarn_name',
         'start_time', 'end_time',
         'total_points', 'score', 'result', 'status',

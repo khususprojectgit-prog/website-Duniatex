@@ -583,7 +583,7 @@ function renderRollStrip(){
   const req = r.request ?? r.inspection_request ?? {};
   const yarn = req.yarn_type?.yarn_name ?? '—';
   const setting = req.setting?.setting_name ?? '—';
-  const op = r.assigned_operator?.name ?? r.operator?.name ?? '—';
+  const op = inspection.production_operator_name ?? r.assigned_operator?.name ?? r.operator?.name ?? '—';
   const notes = req.notes ?? '—';
 
   const items = [

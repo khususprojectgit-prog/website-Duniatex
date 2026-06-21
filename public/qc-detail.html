@@ -316,7 +316,8 @@ function render(){
   const shiftVal=inspection.shift?.value??inspection.shift;
   const fields=[
     ['Roll Code',roll.roll_code??'—'],['Machine',machine.machine_name??'—'],
-    ['Customer',client.client_name??'—'],['Operator',operator.name??'—'],
+    ['Customer',client.client_name??'—'],['Inspector',operator.name??'—'],
+    ['Op. Produksi',inspection.production_operator_name??'—'],
     ['Shift',shiftMap[(shiftVal||'').toLowerCase()]??shiftVal??'—'],
     ['KG',parseFloat(inspection.weight_kg??0).toFixed(2)],
     ['Benang',inspection.yarn_name??'—'],

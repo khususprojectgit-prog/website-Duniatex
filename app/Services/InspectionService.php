@@ -66,9 +66,9 @@ class InspectionService
 
             // Resolve QC User dynamically
             $qcName = trim($measurements['qc_name']);
-            $email = strtolower(str_replace(' ', '', $qcName)) . '@duniatex.com';
+            $qcEmail = strtolower(str_replace(' ', '', $qcName)) . '.qc@duniatex.com';
             $qc = \App\Models\User::firstOrCreate(
-                ['email' => $email],
+                ['email' => $qcEmail],
                 [
                     'name'     => $qcName,
                     'role'     => 'qc',
@@ -77,18 +77,31 @@ class InspectionService
                 ]
             );
 
-            // Update Roll details: Machine, Lot (batch_number) & Assign operator
+            // Resolve Production Operator User dynamically
+            $opName = trim($measurements['operator_name']);
+            $opEmail = strtolower(str_replace(' ', '', $opName)) . '.op@duniatex.com';
+            $productionOp = \App\Models\User::firstOrCreate(
+                ['email' => $opEmail],
+                [
+                    'name'     => $opName,
+                    'role'     => 'qc', // as requested, everyone is qc role now
+                    'password' => bcrypt('password123'),
+                    'status'   => 'active',
+                ]
+            );
+
+            // Update Roll details: Machine, Lot (batch_number) & Assign production operator
             $lockedRoll->update([
                 'status'       => FabricRollStatus::IN_PROGRESS->value,
                 'batch_number' => isset($measurements['batch_number']) && $measurements['batch_number'] !== null ? trim($measurements['batch_number']) : $lockedRoll->batch_number,
                 'machine_id'   => $machine?->id,
-                'operator_id'  => $operatorId,
+                'operator_id'  => $productionOp->id, // Production operator assigned here
             ]);
 
             // Sync InspectionRequest: NEW → IN_PROGRESS (only on first activation)
             $request = $lockedRoll->inspectionRequest;
             if ($request) {
-                // Update QC user for the request
+                // Update QC supervisor user for the request
                 $request->update(['qc_id' => $qc->id]);
 
                 if ($request->status === InspectionRequestStatus::NEW) {
@@ -109,16 +122,17 @@ class InspectionService
             }
 
             $inspection = Inspection::create([
-                'roll_id'      => $lockedRoll->id,
-                'operator_id'  => $operatorId,
-                'shift'        => $measurements['shift'],
-                'length_meter' => null, // now nullable/filled later!
-                'weight_kg'    => $measurements['weight_kg'] ?? null,
-                'gramasi'      => null, // now nullable/filled later!
-                'lebar'        => null, // now nullable/filled later!
-                'yarn_name'    => $yarnName,
-                'start_time'   => now(),
-                'status'       => InspectionStatus::IN_PROGRESS->value,
+                'roll_id'                  => $lockedRoll->id,
+                'operator_id'              => $operatorId, // This is the Inspector (current user)
+                'production_operator_name' => $opName,
+                'shift'                    => $measurements['shift'],
+                'length_meter'             => null, 
+                'weight_kg'                => $measurements['weight_kg'] ?? null,
+                'gramasi'                  => null, 
+                'lebar'                    => null, 
+                'yarn_name'                => $yarnName,
+                'start_time'               => now(),
+                'status'                   => InspectionStatus::IN_PROGRESS->value,
             ]);
 
             Log::info('Inspection started', [

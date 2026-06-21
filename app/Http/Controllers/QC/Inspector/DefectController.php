@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Operator;
+namespace App\Http\Controllers\QC\Inspector;
 
 use App\Enums\InspectionStatus;
 use App\Http\Controllers\Controller;

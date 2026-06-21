@@ -3,7 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\QC;
-use App\Http\Controllers\Operator;
+use App\Http\Controllers\QC\Inspector;
 use App\Http\Controllers\TimelineController;
 use Illuminate\Support\Facades\Route;
 
@@ -139,24 +139,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:qc')->prefix('qc')->name('qc.')->group(function () {
 
         // Available rolls to inspect
-        Route::get('my-rolls',                  [Operator\OperatorInspectionController::class, 'availableRolls']);
-        Route::post('rolls/{fabricRoll}/start', [Operator\OperatorInspectionController::class, 'start']);
+        Route::get('my-rolls',                  [Inspector\OperatorInspectionController::class, 'availableRolls']);
+        Route::post('rolls/{fabricRoll}/start', [Inspector\OperatorInspectionController::class, 'start']);
 
         // Own inspections
-        Route::get('my-inspections',                        [Operator\OperatorInspectionController::class, 'myInspections']);
-        Route::get('my-inspections/{inspection}',           [Operator\OperatorInspectionController::class, 'show']);
-        Route::get('inspections/{inspection}',              [Operator\OperatorInspectionController::class, 'show']);
-        Route::post('inspections/{inspection}/finish',      [Operator\OperatorInspectionController::class, 'finish']);
+        Route::get('my-inspections',                        [Inspector\OperatorInspectionController::class, 'myInspections']);
+        Route::get('my-inspections/{inspection}',           [Inspector\OperatorInspectionController::class, 'show']);
+        Route::get('inspections/{inspection}',              [Inspector\OperatorInspectionController::class, 'show']);
+        Route::post('inspections/{inspection}/finish',      [Inspector\OperatorInspectionController::class, 'finish']);
 
         // Defects on an active inspection
-        Route::get( 'inspections/{inspection}/defects', [Operator\DefectController::class, 'index']);
-        Route::post('inspections/{inspection}/defects', [Operator\DefectController::class, 'store']);
+        Route::get( 'inspections/{inspection}/defects', [Inspector\DefectController::class, 'index']);
+        Route::post('inspections/{inspection}/defects', [Inspector\DefectController::class, 'store']);
 
         // Delete a single defect
-        Route::delete('defects/{defect}',                   [Operator\DefectController::class, 'destroy']);
+        Route::delete('defects/{defect}',                   [Inspector\DefectController::class, 'destroy']);
 
         // Defect type list for UI dropdown
-        Route::get('defect-types',                          [Operator\DefectController::class, 'defectTypes']);
+        Route::get('defect-types',                          [Inspector\DefectController::class, 'defectTypes']);
 
         // Master data dropdowns (read-only, untuk UI popup)
         Route::get('yarn-types', [Admin\YarnTypeController::class, 'index']);

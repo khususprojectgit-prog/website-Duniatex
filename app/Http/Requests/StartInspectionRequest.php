@@ -47,21 +47,23 @@ class StartInspectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shift'        => ['required', Rule::in(['pagi', 'siang', 'malam'])],
-            'weight_kg'    => ['nullable', 'numeric', 'min:0.01', 'max:99999'],
-            'yarn_name'    => ['nullable', 'string', 'max:100'],
-            'qc_name'      => ['required', 'string', 'max:100'],
-            'batch_number' => ['nullable', 'string', 'max:100'],
-            'machine_name' => ['nullable', 'string', 'max:100'],
+            'shift'         => ['required', Rule::in(['pagi', 'siang', 'malam'])],
+            'weight_kg'     => ['nullable', 'numeric', 'min:0.01', 'max:99999'],
+            'yarn_name'     => ['nullable', 'string', 'max:100'],
+            'qc_name'       => ['required', 'string', 'max:100'],
+            'operator_name' => ['required', 'string', 'max:100'],
+            'batch_number'  => ['nullable', 'string', 'max:100'],
+            'machine_name'  => ['nullable', 'string', 'max:100'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'shift.required'        => 'Pilih shift kerja (pagi, siang, atau malam).',
-            'shift.in'              => 'Shift tidak valid.',
-            'qc_name.required'      => 'Nama QC wajib diisi.',
+            'shift.required'         => 'Pilih shift kerja (pagi, siang, atau malam).',
+            'shift.in'               => 'Shift tidak valid.',
+            'qc_name.required'       => 'Nama QC wajib diisi.',
+            'operator_name.required' => 'Nama Operator wajib diisi.',
         ];
     }
 

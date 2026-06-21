@@ -156,7 +156,7 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
       </select>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Roll Code</th><th>OPK</th><th>Customer</th><th>Mesin</th><th>Status</th><th>Inspeksi</th><th>Score</th><th></th></tr></thead>
+      <thead><tr><th>Roll Code</th><th>OPK</th><th>Customer</th><th>Mesin</th><th>Status</th><th>Inspeksi</th><th>Score</th><th>Berat Akhir</th><th></th></tr></thead>
       <tbody id="tbRolls"></tbody>
     </table></div>
     <div class="pager" id="pgRolls"></div>
@@ -224,6 +224,19 @@ main{padding:1.25rem;max-width:1100px;margin:0 auto}
     </table></div>
   </div>
 </main>
+
+<!-- Modal: Simple Confirmation -->
+<div id="modalConfirmRelease" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box" style="max-width:360px;width:100%;text-align:center">
+    <div style="font-size:3rem;margin-bottom:1rem">🚚</div>
+    <h3 style="margin-bottom:0.5rem">Konfirmasi Pengiriman</h3>
+    <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem">Apakah Anda yakin roll ini sudah terkirim atau siap rilis ke customer?</p>
+    <div class="modal-acts" style="justify-content:center;gap:1rem">
+      <button class="btn-cancel" onclick="closeModal('modalConfirmRelease')" style="flex:1">Tidak</button>
+      <button class="btn-confirm" id="btnDoRelease" style="flex:1">Ya, Kirim</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 

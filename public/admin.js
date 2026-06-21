@@ -397,6 +397,16 @@ async function loadRolls(page=1) {
       const detailBtn = insp?.id
         ? `<button class="btn-edit" onclick="location.href='qc-detail.html?id=${insp.id}'">Detail</button>`
         : '—';
+      
+      // Calculate Netto (Berat Akhir)
+      let beratAkhir = '—';
+      if (insp && insp.weight_kg != null) {
+        const bruto = parseFloat(insp.weight_kg);
+        const p1 = parseFloat(insp.potongan_1_kg || 0);
+        const p2 = parseFloat(insp.potongan_2_kg || 0);
+        beratAkhir = (bruto - (p1 + p2)).toFixed(2) + ' kg';
+      }
+
       return `<tr>
         <td class="tc" style="font-family:monospace">${esc(r.roll_code)}</td>
         <td class="tm">${esc(r.inspection_request?.opk||'—')}</td>
@@ -405,9 +415,10 @@ async function loadRolls(page=1) {
         <td>${pillHtml(r.status)}</td>
         <td class="tm">${esc(insp?.operator?.name||'—')}</td>
         <td style="text-align:center;font-weight:700">${insp?.score != null ? insp.score : '—'}</td>
+        <td style="text-align:center;font-weight:700;color:var(--accent)">${beratAkhir}</td>
         <td>${detailBtn}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="8" class="state-box"><div class="si">🧵</div><h3>Tidak ada roll</h3></td></tr>`;
+    }).join('') : `<tr><td colspan="9" class="state-box"><div class="si">🧵</div><h3>Tidak ada roll</h3></td></tr>`;
     $('pgRolls').innerHTML = pagerHtml(j?.data, 'loadRolls');
   } catch(_) {}
 }
@@ -712,26 +723,37 @@ $('logoutBtn').addEventListener('click', async () => {
 });
 
 // ── Quick Release ───────────────────────────────────────────
-async function quickRelease(inspectionId) {
-  if (confirm('Apakah Anda yakin roll ini sudah terkirim / rilis ke customer?')) {
-    try {
-      const res = await fetch(`${BASE}/admin/inspections/${inspectionId}/release`, {
-        method: 'POST',
-        headers: auth()
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast(data.message || 'Gagal merilis hasil inspeksi.', 'err');
-        return;
-      }
-      toast('Roll berhasil dirilis ke customer!', 'ok');
-      loadFinalData();
-      loadStats();
-    } catch (_) {
-      toast('Network error. Periksa koneksi Anda.', 'err');
-    }
-  }
+let pendingReleaseId = null;
+
+function quickRelease(inspectionId) {
+  pendingReleaseId = inspectionId;
+  showModal('modalConfirmRelease');
 }
+
+$('btnDoRelease').addEventListener('click', async () => {
+  if (!pendingReleaseId) return;
+  setBtn('btnDoRelease', true);
+  try {
+    const res = await fetch(`${BASE}/admin/inspections/${pendingReleaseId}/release`, {
+      method: 'POST',
+      headers: auth()
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.message || 'Gagal merilis hasil inspeksi.', 'err');
+      return;
+    }
+    toast('Roll berhasil dirilis ke customer!', 'ok');
+    closeModal('modalConfirmRelease');
+    loadFinalData();
+    loadStats();
+  } catch (_) {
+    toast('Network error. Periksa koneksi Anda.', 'err');
+  } finally {
+    setBtn('btnDoRelease', false);
+    pendingReleaseId = null;
+  }
+});
 
 // ── Final Data (Validasi & Rilis) ──────────────────────────
 async function loadFinalData() {
@@ -757,7 +779,7 @@ async function loadFinalData() {
         <td class="tm">${new Date(i.created_at).toLocaleDateString('id-ID')}</td>
         <td>
           <div class="tbl-actions">
-            <button class="btn-val" onclick="quickRelease(${i.id})">✓ Sudah Kirim</button>
+            <button class="btn-val" onclick="quickRelease(${i.id})">✓ Kirim Ke Customer?</button>
             <button class="btn-edit" onclick="location.href='qc-detail.html?id=${i.id}'">🔍 Review</button>
           </div>
         </td>

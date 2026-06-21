@@ -241,6 +241,18 @@
       text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: .9rem;
     }
     .no-result-icon { font-size: 2rem; margin-bottom: .5rem; }
+
+    /* ── Potongan Table ── */
+    .pot-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.15rem; margin-bottom: .75rem;
+      box-shadow: var(--shadow);
+    }
+    .pot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .85rem; border-top: 1px dashed var(--border); padding-top: .85rem; }
+    .pot-item { display: flex; flex-direction: column; }
+    .pot-label { font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .pot-val { font-size: .9rem; font-weight: 700; color: var(--text); }
+    .pot-netto { background: var(--accent-light); color: var(--accent); padding: .3rem .6rem; border-radius: 6px; font-weight: 800; }
   </style>
 </head>
 <body>
@@ -278,6 +290,7 @@
       <button class="ftab active" data-status="NEW">Antrean <span class="ftab-count" id="cntNew">—</span></button>
       <button class="ftab" data-status="PENDING">Re-inspeksi <span class="ftab-count" id="cntPnd">—</span></button>
       <button class="ftab" data-status="HISTORY">Riwayat <span class="ftab-count" id="cntHistory">—</span></button>
+      <button class="ftab" data-status="POTONGAN">Potongan <span class="ftab-count" id="cntPotongan">—</span></button>
     </div>
     <button class="btn-ref" id="refreshBtn">
       <span class="refresh-icon">⟳</span> Refresh
@@ -291,6 +304,21 @@
       <input id="customerSearch" type="text" placeholder="Cari nama customer…" autocomplete="off"/>
     </div>
     <div id="customerList"></div>
+  </div>
+
+  <!-- POTONGAN VIEW -->
+  <div id="potonganView" style="display:none">
+    <div style="display:flex; gap:0.5rem; margin-bottom:1.1rem;">
+      <div class="roll-search-wrap" style="flex:1; margin-bottom:0;">
+        <span class="rs-icon">🔍</span>
+        <input id="searchPotRoll" type="text" placeholder="No. Roll Manual…" autocomplete="off" style="padding-left:2.1rem; font-size:0.8rem;"/>
+      </div>
+      <div class="roll-search-wrap" style="flex:1; margin-bottom:0;">
+        <span class="rs-icon">🔍</span>
+        <input id="searchPotOpk" type="text" placeholder="Cari OPK…" autocomplete="off" style="padding-left:2.1rem; font-size:0.8rem;"/>
+      </div>
+    </div>
+    <div id="potonganList"></div>
   </div>
 
   <!-- INNER VIEW: roll per customer -->
@@ -332,6 +360,7 @@
       </div>
     </div>
     <div class="start-field"><label>Nama QC</label><input id="stQc" type="text" maxlength="100" placeholder="cth: QC Budi"/></div>
+    <div class="start-field"><label>Nama Operator</label><input id="stOperator" type="text" maxlength="100" placeholder="cth: Op. Slamet"/></div>
     <div id="startErr" style="color:var(--danger);font-size:.82rem;display:none;margin-top:.25rem"></div>
     <div class="start-acts">
       <button type="button" class="btn-start-cancel" id="startCancel">Batal</button>
@@ -416,9 +445,12 @@
   }
 
   // ── Load rolls ───────────────────────────────────────
-  let currentStatus = window.location.hash.replace('#', '') === 'HISTORY' ? 'HISTORY' : 'NEW';
+  let currentStatus = window.location.hash.replace('#', '') || 'NEW';
+  if (!['NEW', 'PENDING', 'HISTORY', 'POTONGAN'].includes(currentStatus)) currentStatus = 'NEW';
+  
   let _allRolls    = [];   // semua roll tersedia
   let _allHistory  = [];   // semua riwayat inspeksi
+  let _allPotongan = [];   // semua data potongan
   let _groups      = {};   // grouped by customer name
   let _colorMap    = {};   // nama customer → [c1, c2, emoji]
 
@@ -437,12 +469,13 @@
     showSkeleton();
 
     try {
-      const [rollsRes, inspectionsRes] = await Promise.all([
+      const [rollsRes, inspectionsRes, potonganRes] = await Promise.all([
         fetch(`${BASE}/qc/my-rolls`, { headers: auth() }),
-        fetch(`${BASE}/qc/my-inspections`, { headers: auth() })
+        fetch(`${BASE}/qc/my-inspections`, { headers: auth() }),
+        fetch(`${BASE}/qc/potongan`, { headers: auth() })
       ]);
 
-      if (rollsRes.status === 401 || inspectionsRes.status === 401) {
+      if (rollsRes.status === 401 || inspectionsRes.status === 401 || potonganRes.status === 401) {
         localStorage.clear();
         window.location.replace('index.html');
         return;
@@ -450,6 +483,7 @@
 
       const rollsData = await rollsRes.json();
       const inspectionsData = await inspectionsRes.json();
+      const potonganData = await potonganRes.json();
 
       const rolls = Array.isArray(rollsData) ? rollsData
                   : Array.isArray(rollsData.data) ? rollsData.data
@@ -461,18 +495,27 @@
                         : Array.isArray(inspectionsData.data?.data) ? inspectionsData.data.data
                         : [];
 
+      const potongans = Array.isArray(potonganData) ? potonganData
+                      : Array.isArray(potonganData.data) ? potonganData.data
+                      : Array.isArray(potonganData.data?.data) ? potonganData.data.data
+                      : [];
+
       // Update count badges
       const cntNew = rolls.filter(r => (r.status || '').toUpperCase() === 'NEW').length;
       const cntPnd = rolls.filter(r => (r.status || '').toUpperCase() === 'PENDING').length;
       document.getElementById('cntNew').textContent = cntNew;
       document.getElementById('cntPnd').textContent = cntPnd;
       document.getElementById('cntHistory').textContent = inspections.length;
+      document.getElementById('cntPotongan').textContent = potongans.length;
 
       _allRolls = rolls;
       _allHistory = inspections;
+      _allPotongan = potongans;
 
       if (currentStatus === 'HISTORY') {
         renderRolls(inspections);
+      } else if (currentStatus === 'POTONGAN') {
+        renderPotongan(potongans);
       } else {
         renderRolls(rolls);
       }
@@ -701,8 +744,89 @@
     container.appendChild(list);
   }
 
+  // ── Render Potongan ───────────────────────────────────
+  function renderPotongan(data, rollQuery = '', opkQuery = '') {
+    document.getElementById('outerView').style.display   = 'none';
+    document.getElementById('innerView').style.display   = 'none';
+    document.getElementById('potonganView').style.display = 'block';
+    
+    const container = document.getElementById('potonganList');
+    container.innerHTML = '';
+
+    if (!data) data = [];
+
+    const rq = String(rollQuery || '').trim().toLowerCase();
+    const oq = String(opkQuery || '').trim().toLowerCase();
+    
+    const filtered = data.filter(item => {
+      const manualRoll = String(item.manual_roll_number || '').toLowerCase();
+      const opk = String(item.roll?.request?.opk ?? item.roll?.inspection_request?.opk ?? '').toLowerCase();
+      
+      const matchRoll = !rq || manualRoll.includes(rq);
+      const matchOpk = !oq || opk.includes(oq);
+      
+      return matchRoll && matchOpk;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">🔍</div>
+          <h3>${(rq || oq) ? 'Hasil Tidak Ditemukan' : 'Belum Ada Data Potongan'}</h3>
+          <p>${(rq || oq) ? 'Tidak ada data yang cocok dengan kriteria pencarian Anda.' : 'Data akan muncul otomatis jika ada inspeksi yang memiliki potongan berat.'}</p>
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'pot-card';
+      const machine = item.roll?.machine?.name ?? '—';
+      const manualRoll = item.manual_roll_number ?? '—';
+      const customer = item.roll?.inspection_request?.client?.client_name ?? '—';
+      
+      // Conditional Potongan 2: only show if > 0
+      const pot2Html = parseFloat(item.potongan_2_kg) > 0 
+        ? `<div class="pot-item">
+            <span class="pot-label">Potongan 2</span>
+            <span class="pot-val">${item.potongan_2_kg}</span>
+           </div>` 
+        : '';
+
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--text)">Roll: ${esc(manualRoll)}</div>
+          <button class="btn-ref" style="font-size:0.7rem;padding:0.2rem 0.5rem;margin:0" onclick="location.href='qc-detail.html?id=${item.id}'">
+            🔍 Lihat Detail
+          </button>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem">
+          ${esc(customer)} <span style="opacity:0.5;margin:0 4px">•</span> <span style="font-weight:600">${esc(machine)}</span>
+        </div>
+        
+        <div class="pot-grid">
+          <div class="pot-item">
+            <span class="pot-label">Berat (kg)</span>
+            <span class="pot-val">${item.weight_kg}</span>
+          </div>
+          <div class="pot-item">
+            <span class="pot-label">Berat Akhir (kg)</span>
+            <span class="pot-val"><span class="pot-netto">${item.weight_netto}</span></span>
+          </div>
+          <div class="pot-item">
+            <span class="pot-label">Potongan 1</span>
+            <span class="pot-val">${item.potongan_1_kg}</span>
+          </div>
+          ${pot2Html}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
   // ── Render rolls entry point ───────────────────────────
   function renderRolls(data) {
+    document.getElementById('potonganView').style.display = 'none';
     const filtered = currentStatus === 'HISTORY' ? data : data.filter(r => (r.status || '').toUpperCase() === currentStatus);
     _groups   = buildGroups(filtered);
 
@@ -781,6 +905,7 @@
     document.getElementById('mInfoNotes').textContent = roll.request?.notes ?? roll.inspection_request?.notes ?? '—';
 
     document.getElementById('stQc').value      = roll.request?.qc?.name ?? roll.inspection_request?.qc?.name ?? '';
+    document.getElementById('stOperator').value = roll.assigned_operator?.name ?? roll.operator?.name ?? '';
 
     const err = document.getElementById('startErr');
     err.style.display = 'none';
@@ -794,6 +919,7 @@
     if (!pendingStart) return;
     const err = document.getElementById('startErr');
     const qc = document.getElementById('stQc').value.trim();
+    const operator = document.getElementById('stOperator').value.trim();
 
     if (!selectedShift) {
       err.textContent = 'Pilih shift kerja.';
@@ -802,6 +928,11 @@
     }
     if (!qc) {
       err.textContent = 'Nama QC wajib diisi.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!operator) {
+      err.textContent = 'Nama Operator wajib diisi.';
       err.style.display = 'block';
       return;
     }
@@ -815,8 +946,9 @@
         method: 'POST',
         headers: auth(),
         body: JSON.stringify({
-          shift:        selectedShift,
-          qc_name:      qc,
+          shift:         selectedShift,
+          qc_name:       qc,
+          operator_name: operator,
         }),
       });
       const data = await res.json();
@@ -854,13 +986,26 @@
     btn.classList.add('active');
     currentStatus = btn.dataset.status;
     document.getElementById('customerSearch').value = '';
+    document.getElementById('searchPotRoll').value = '';
+    document.getElementById('searchPotOpk').value = '';
     window.location.hash = currentStatus;
     if (currentStatus === 'HISTORY') {
       renderRolls(_allHistory);
+    } else if (currentStatus === 'POTONGAN') {
+      renderPotongan(_allPotongan);
     } else {
       renderRolls(_allRolls);
     }
   });
+
+  function triggerPotonganSearch() {
+    const rollQ = document.getElementById('searchPotRoll').value;
+    const opkQ = document.getElementById('searchPotOpk').value;
+    renderPotongan(_allPotongan, rollQ, opkQ);
+  }
+
+  document.getElementById('searchPotRoll').addEventListener('input', triggerPotonganSearch);
+  document.getElementById('searchPotOpk').addEventListener('input', triggerPotonganSearch);
 
   // ── Logout ────────────────────────────────────────────
   document.getElementById('logoutBtn').addEventListener('click', async () => {

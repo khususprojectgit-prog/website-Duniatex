@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Operator;
+namespace App\Http\Controllers\QC\Inspector;
 
 use App\Enums\FabricRollStatus;
 use App\Enums\InspectionStatus;
