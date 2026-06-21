@@ -151,7 +151,7 @@ main{padding:1.1rem;max-width:680px;margin:0 auto;padding-bottom:6rem}
 
 <script src="scoring.js"></script>
 <script>
-const BASE=`http://127.0.0.1:8000/api`;
+const BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') ? 'http://127.0.0.1:8000/api' : window.location.origin + '/api';
 const token=localStorage.getItem('token');
 if(!token) location.replace('index.html');
 const role=localStorage.getItem('role');

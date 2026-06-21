@@ -1,5 +1,5 @@
 'use strict';
-const BASE = 'http://127.0.0.1:8000/api';
+const BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') ? 'http://127.0.0.1:8000/api' : window.location.origin + '/api';
 const token = localStorage.getItem('token');
 const role  = localStorage.getItem('role');
 if (!token || role !== 'admin') { location.replace('index.html'); }

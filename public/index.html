@@ -207,91 +207,89 @@
   </div>
 
   <script>
-    const BASE = 'http://127.0.0.1:8000/api';
+    const BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') ? 'http://127.0.0.1:8000/api' : window.location.origin + '/api';
 
     // Verifikasi token ke server sebelum redirect — cegah auto-redirect dengan token expired
     const _storedToken = localStorage.getItem('token');
     if (_storedToken && _storedToken !== 'undefined' && _storedToken !== 'null') {
       // Cek token ke server dulu, baru redirect jika valid
       fetch(`${BASE}/me`, {
-        headers: { 'Authorization': `Bearer ${_storedToken}`, 'Accept': 'application/json' }
-      }).then(res => {
-        if (res.ok) {
-          // Token masih valid — redirect ke dashboard sesuai role
-          const _storedRole = localStorage.getItem('role') || '';
-          const _dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
-          window.location.replace(_dashMap[_storedRole] || 'dashboard.html');
-        } else {
-          // Token expired atau invalid — hapus semua dan tampilkan form login
-          localStorage.clear();
+        headers: {
+          'Authorization': `Bearer ${_storedToken}`,
+          'Accept': 'application/json'
         }
-      }).catch(() => {
-        // Server tidak bisa dijangkau — tetap tampilkan form login (jangan redirect)
-        // localStorage dibiarkan agar bisa coba lagi saat server hidup
+      })
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(res => {
+        const role = localStorage.getItem('role');
+        const dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
+        window.location.replace(dashMap[role] || 'dashboard.html');
+      })
+      .catch(() => {
+        localStorage.clear();
       });
-    } else if (_storedToken) {
-      // Token rusak (string "undefined"/"null") — hapus semua
-      localStorage.clear();
     }
 
     const form = document.getElementById('loginForm');
-    const btn = document.getElementById('loginBtn');
-    const errEl = document.getElementById('errorMsg');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const errorBox = document.getElementById('errorBox');
 
-    function showError(msg) {
-      errEl.textContent = msg;
-      errEl.classList.add('show');
-    }
-    function clearError() { errEl.classList.remove('show'); }
+    const showError = msg => {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    };
 
-    function setLoading(on) {
-      btn.disabled = on;
-      btn.innerHTML = on
-        ? '<span class="spinner"></span>Memproses…'
-        : 'Masuk';
-    }
+    const hideError = () => {
+      errorBox.style.display = 'none';
+    };
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError();
-
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!email || !password) {
-        showError('Email dan password wajib diisi.');
-        return;
+    const setLoading = isLoading => {
+      if (isLoading) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Mencoba Masuk...';
+      } else {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Masuk';
       }
+    };
 
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      hideError();
       setLoading(true);
+
       const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 20_000); // 20-detik timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
       try {
         const res = await fetch(`${BASE}/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ email, password }),
-          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            email: emailInput.value,
+            password: passwordInput.value
+          }),
+          signal: controller.signal
         });
+
         clearTimeout(timeoutId);
-        const data = await res.json();
 
         if (!res.ok) {
-          showError(data.message || 'Login gagal. Periksa email & password.');
-          return;
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP error! status: ${res.status}`);
         }
 
-        // API response shape: { success, message, data: { token, user: { id, name, email, role } } }
-        const token = data.data?.token;
-        const user = data.data?.user;
-        const role = user?.role ?? '';
+        const data = await res.json();
+        const { token, role, user } = data.data;
 
-        if (!token) {
-          showError('Token tidak ditemukan pada respons server.');
-          return;
-        }
-
-        // Save to localStorage only after validation
         localStorage.setItem('token', token);
         localStorage.setItem('role', role);
         localStorage.setItem('user_name', user?.name || '');
@@ -304,11 +302,11 @@
       } catch (err) {
         clearTimeout(timeoutId);
         if (err.name === 'AbortError') {
-          showError('Koneksi timeout (>20 detik). Pastikan backend Laravel berjalan di http://127.0.0.1:8000');
+          showError(`Koneksi timeout (>20 detik). Pastikan backend berjalan di ${BASE}`);
         } else if (err instanceof SyntaxError) {
           showError('Server mengembalikan respons tidak valid. Pastikan Laravel berjalan dan APP_DEBUG dicek.');
         } else {
-          showError('Tidak dapat terhubung ke server. Pastikan backend berjalan di http://127.0.0.1:8000');
+          showError(err.message || `Tidak dapat terhubung ke server. Pastikan backend berjalan di ${BASE}`);
         }
         console.error('[Login Error]', err);
       } finally {
