@@ -214,23 +214,24 @@
     if (_storedToken && _storedToken !== 'undefined' && _storedToken !== 'null') {
       // Cek token ke server dulu, baru redirect jika valid
       fetch(`${BASE}/me`, {
-        headers: {
-          'Authorization': `Bearer ${_storedToken}`,
-          'Accept': 'application/json'
+        headers: { 'Authorization': `Bearer ${_storedToken}`, 'Accept': 'application/json' }
+      }).then(res => {
+        if (res.ok) {
+          // Token masih valid — redirect ke dashboard sesuai role
+          const _storedRole = localStorage.getItem('role') || '';
+          const _dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
+          window.location.replace(_dashMap[_storedRole] || 'dashboard.html');
+        } else {
+          // Token expired atau invalid — hapus semua dan tampilkan form login
+          localStorage.clear();
         }
-      })
-      .then(res => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then(res => {
-        const role = localStorage.getItem('role');
-        const dashMap = { admin: 'admin.html', qc: 'qc.html', operator: 'dashboard.html' };
-        window.location.replace(dashMap[role] || 'dashboard.html');
-      })
-      .catch(() => {
-        localStorage.clear();
+      }).catch(() => {
+        // Server tidak bisa dijangkau — tetap tampilkan form login (jangan redirect)
+        // localStorage dibiarkan agar bisa coba lagi saat server hidup
       });
+    } else if (_storedToken) {
+      // Token rusak (string "undefined"/"null") — hapus semua
+      localStorage.clear();
     }
 
     const form = document.getElementById('loginForm');
